@@ -1,50 +1,39 @@
-# Welcome to your Expo app 👋
+# Safr
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Safr is a travel ranking app.
 
-## Get started
+## Structure
 
-1. Install dependencies
+### app
 
-   ```bash
-   npm install
-   ```
+The app directory contains the main app code.
 
-2. Start the app
+### api
 
-   ```bash
-   npx expo start
-   ```
+The api directory contains the api code.
 
-In the output, you'll find options to open the app in a
+### context
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+The context directory contains the context code.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+### screens
 
-## Get a fresh project
+The screens directory contains the screens code.
 
-When you're ready, run:
+### utils
+
+The utils directory contains the utils code.
+
+## Installation
 
 ```bash
-npm run reset-project
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Running the app
 
-## Learn more
+```bash
+npx expo start
+```
 
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Please make sure you set the API_BASE_URL in the api.ts file to the correct URL of your backend.
