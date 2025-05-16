@@ -23,7 +23,7 @@ import {
 
 import apiService from "../../src/api";
 import { AuthContext } from "../../src/context/AuthContext";
-import { styles } from "../../src/screens/tabs/addRanking.styles"; // Corrected path
+import { styles } from "../../src/screens/tabs/addRanking.styles"; // Ensure this path is correct
 import { COLORS, SPACING } from "../../src/theme";
 
 interface City {
@@ -32,133 +32,24 @@ interface City {
   country: string;
 }
 
-export default function AddRankingScreen() {
-  const authContext = useContext(AuthContext);
-  const router = useRouter();
+interface RankingListHeaderProps {
+  searchTerm: string;
+  setSearchTerm: (text: string) => void;
+  fetchError: string; // Renamed from 'error' for clarity
+  isSubmitting: boolean;
+}
 
-  const [allCities, setAllCities] = useState<City[]>([]);
-  const [searchTerm, setSearchTerm] = useState<string>("");
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>("");
-
-  const [selectedCity, setSelectedCity] = useState<City | null>(null);
-  const [score, setScore] = useState<string>("");
-  const [isLoadingCities, setIsLoadingCities] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState("");
-
-  if (!authContext) {
-    console.error("AuthContext is not available in AddRankingScreen.");
+const RankingListHeader: React.FC<RankingListHeaderProps> = React.memo(
+  ({
+    searchTerm,
+    setSearchTerm,
+    fetchError, // Use fetchError here
+    isSubmitting,
+  }) => {
     return (
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.centeredLoaderContainer}>
-          <Text style={{ color: COLORS.error }}>Service unavailable.</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  const fetchCities = useCallback(async () => {
-    setIsLoadingCities(true);
-    setError("");
-    try {
-      // Fetch a larger list for client-side search. Adjust limit as needed.
-      // For a truly global dataset, server-side search would be better.
-      const cityData = await apiService.getCities(0, 500);
-      setAllCities(cityData);
-    } catch (e: any) {
-      setError(e.message || "Failed to load cities. Please try again.");
-      setAllCities([]);
-    } finally {
-      setIsLoadingCities(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchCities();
-  }, [fetchCities]);
-
-  // Debounce search term
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm);
-    }, 300); // 300ms delay
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [searchTerm]);
-
-  // Filter cities based on debounced search term
-  // Only show results if there is a search term
-  const displayedCities = useMemo(() => {
-    const trimmedSearch = debouncedSearchTerm.trim().toLowerCase();
-    if (!trimmedSearch) {
-      return []; // Show no cities if search is empty
-    }
-    return allCities.filter(
-      (city) =>
-        city.name.toLowerCase().includes(trimmedSearch) ||
-        city.country.toLowerCase().includes(trimmedSearch)
-    );
-  }, [allCities, debouncedSearchTerm]);
-
-  const handleAddOrUpdateRanking = async () => {
-    if (!selectedCity) {
-      setError("Please select a city from the search results to rank.");
-      return;
-    }
-    if (!score.trim()) {
-      setError("Please enter a score for the selected city.");
-      return;
-    }
-    const numericScore = parseFloat(score);
-    if (isNaN(numericScore) || numericScore < 0 || numericScore > 100) {
-      setError("Score must be a number between 0 and 100.");
-      return;
-    }
-
-    setIsSubmitting(true);
-    setError("");
-    try {
-      await apiService.addOrUpdateRanking(selectedCity.id, numericScore);
-      Alert.alert(
-        "Ranking Submitted!",
-        `Your score for ${selectedCity.name} has been saved.`,
-        // Explicitly redirect to home and ensure it's part of the (tabs) group
-        [{ text: "OK", onPress: () => router.replace("/(tabs)/home") }]
-      );
-    } catch (e: any) {
-      setError(e.message || "Failed to submit ranking. Please try again.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const renderCityPickerItem = ({ item }: { item: City }) => (
-    <TouchableOpacity
-      style={[
-        styles.cityPickerItem,
-        selectedCity?.id === item.id && styles.cityPickerItemSelected,
-      ]}
-      onPress={() => {
-        setSelectedCity(item);
-        // Optionally, you could clear the search term here or scroll to the selection
-        // setSearchTerm(item.name); // This might re-trigger filtering, handle carefully
-      }}
-      activeOpacity={0.7}
-    >
-      <Text style={styles.cityPickerItemText}>
-        {item.name}, {item.country}
-      </Text>
-    </TouchableOpacity>
-  );
-
-  // Memoize ListHeaderComponent to prevent unnecessary re-renders causing focus loss
-  const ListHeaderComponent = useCallback(
-    () => (
       <View style={styles.listHeaderContainer}>
-        {error && !isSubmitting && (
-          <Text style={styles.errorText}>{error}</Text>
+        {fetchError && !isSubmitting && (
+          <Text style={styles.errorText}>{fetchError}</Text>
         )}
         <Text style={styles.label}>Search and Select a City</Text>
         <TextInput
@@ -166,17 +57,38 @@ export default function AddRankingScreen() {
           placeholder="Type to search cities..."
           placeholderTextColor={COLORS.placeholder}
           value={searchTerm}
-          onChangeText={setSearchTerm} // Directly update searchTerm
+          onChangeText={setSearchTerm}
           autoCapitalize="words"
           returnKeyType="search"
+          autoCorrect={false}
+          spellCheck={false}
         />
       </View>
-    ),
-    [error, isSubmitting, searchTerm]
-  ); // Dependencies for useCallback
+    );
+  }
+);
 
-  const ListFooterComponent = useCallback(
-    () => (
+interface RankingListFooterProps {
+  selectedCity: City | null;
+  score: string;
+  setScore: (text: string) => void;
+  isSubmitting: boolean;
+  isLoadingCities: boolean;
+  submitError: string; // Renamed from 'error' for clarity
+  handleAddOrUpdateRanking: () => Promise<void>;
+}
+
+const RankingListFooter: React.FC<RankingListFooterProps> = React.memo(
+  ({
+    selectedCity,
+    score,
+    setScore,
+    isSubmitting,
+    isLoadingCities,
+    submitError, // Use submitError here
+    handleAddOrUpdateRanking,
+  }) => {
+    return (
       <View style={styles.listFooterContainer}>
         {selectedCity && (
           <Text style={styles.selectedCityText}>
@@ -215,18 +127,138 @@ export default function AddRankingScreen() {
             <Text style={styles.buttonTextPrimary}>Submit Ranking</Text>
           </TouchableOpacity>
         )}
-        {error && isSubmitting && <Text style={styles.errorText}>{error}</Text>}
+        {submitError && <Text style={styles.errorText}>{submitError}</Text>}
       </View>
-    ),
-    [
-      selectedCity,
-      score,
-      isSubmitting,
-      isLoadingCities,
-      error,
-      handleAddOrUpdateRanking,
-    ]
-  ); // Added handleAddOrUpdateRanking to dependencies
+    );
+  }
+);
+
+export default function AddRankingScreen() {
+  const authContext = useContext(AuthContext);
+  const router = useRouter();
+
+  const [allCities, setAllCities] = useState<City[]>([]);
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>("");
+
+  const [selectedCity, setSelectedCity] = useState<City | null>(null);
+  const [score, setScore] = useState<string>("");
+  const [isLoadingCities, setIsLoadingCities] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [fetchError, setFetchError] = useState("");
+  const [submitError, setSubmitError] = useState("");
+
+  if (!authContext) {
+    console.error("AuthContext is not available in AddRankingScreen.");
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.centeredLoaderContainer}>
+          <Text style={{ color: COLORS.error }}>Service unavailable.</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const fetchCities = useCallback(async () => {
+    setIsLoadingCities(true);
+    setFetchError("");
+    try {
+      const cityData = await apiService.getCities(0, 15000);
+      setAllCities(cityData);
+    } catch (e: any) {
+      setFetchError(e.message || "Failed to load cities. Please try again.");
+      setAllCities([]);
+    } finally {
+      setIsLoadingCities(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCities();
+  }, [fetchCities]);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchTerm]);
+
+  const displayedCities = useMemo(() => {
+    const trimmedSearch = debouncedSearchTerm.trim().toLowerCase();
+    if (!trimmedSearch) {
+      return [];
+    }
+    return allCities.filter(
+      (city) =>
+        city.name.toLowerCase().includes(trimmedSearch) ||
+        city.country.toLowerCase().includes(trimmedSearch)
+    );
+  }, [allCities, debouncedSearchTerm]);
+
+  const handleAddOrUpdateRanking = async () => {
+    if (!selectedCity) {
+      setSubmitError("Please select a city from the search results to rank.");
+      return;
+    }
+    if (!score.trim()) {
+      setSubmitError("Please enter a score for the selected city.");
+      return;
+    }
+    const numericScore = parseFloat(score);
+    if (isNaN(numericScore) || numericScore < 0 || numericScore > 100) {
+      setSubmitError("Score must be a number between 0 and 100.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitError("");
+    try {
+      await apiService.addOrUpdateRanking(selectedCity.id, numericScore);
+      Alert.alert(
+        "Ranking Submitted!",
+        `Your score for ${selectedCity.name} has been saved.`,
+        [
+          {
+            text: "OK",
+            onPress: () => {
+              setSearchTerm(""); // Reset search term
+              setDebouncedSearchTerm(""); // Reset debounced search term
+              setSelectedCity(null); // Reset selected city
+              setScore(""); // Reset score input
+              router.replace("/(tabs)/home");
+            },
+          },
+        ]
+      );
+    } catch (e: any) {
+      setSubmitError(
+        e.message || "Failed to submit ranking. Please try again."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const renderCityPickerItem = ({ item }: { item: City }) => (
+    <TouchableOpacity
+      style={[
+        styles.cityPickerItem,
+        selectedCity?.id === item.id && styles.cityPickerItemSelected,
+      ]}
+      onPress={() => {
+        setSelectedCity(item);
+      }}
+      activeOpacity={0.7}
+    >
+      <Text style={styles.cityPickerItemText}>
+        {item.name}, {item.country}
+      </Text>
+    </TouchableOpacity>
+  );
 
   if (isLoadingCities && allCities.length === 0) {
     return (
@@ -250,7 +282,7 @@ export default function AddRankingScreen() {
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardAvoidingContainer}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 0} // Adjust if header is present
+        keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 0}
       >
         <View style={styles.screenContainer}>
           <FlatList
@@ -258,10 +290,26 @@ export default function AddRankingScreen() {
             renderItem={renderCityPickerItem}
             keyExtractor={(item) => item.id.toString()}
             style={styles.cityList}
-            ListHeaderComponent={ListHeaderComponent}
-            ListFooterComponent={ListFooterComponent}
+            ListHeaderComponent={
+              <RankingListHeader
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+                fetchError={fetchError}
+                isSubmitting={isSubmitting}
+              />
+            }
+            ListFooterComponent={
+              <RankingListFooter
+                selectedCity={selectedCity}
+                score={score}
+                setScore={setScore}
+                isSubmitting={isSubmitting}
+                isLoadingCities={isLoadingCities}
+                submitError={submitError}
+                handleAddOrUpdateRanking={handleAddOrUpdateRanking}
+              />
+            }
             ListEmptyComponent={
-              // Show only if not loading cities and search term is present but no results
               !isLoadingCities && debouncedSearchTerm.trim() ? (
                 <View style={{ padding: SPACING.xl }}>
                   <Text style={styles.emptyText}>
@@ -273,6 +321,9 @@ export default function AddRankingScreen() {
                   <Text style={styles.emptyText}>
                     Start typing to search for a city.
                   </Text>
+                  {fetchError && (
+                    <Text style={styles.errorText}>{fetchError}</Text>
+                  )}
                 </View>
               ) : null
             }

@@ -1,5 +1,6 @@
+// src/screens/tabs/home.styles.ts
 import { Platform, StyleSheet } from "react-native";
-import { COLORS, FONT_WEIGHTS, SPACING, TYPOGRAPHY } from "../../theme";
+import { COLORS, FONT_WEIGHTS, SPACING, TYPOGRAPHY } from "../../../src/theme"; // Adjusted path
 
 export const styles = StyleSheet.create({
   safeArea: {
@@ -8,42 +9,42 @@ export const styles = StyleSheet.create({
   },
   screenContainer: {
     flex: 1,
-    paddingHorizontal: SPACING.lg, // 16px
-    paddingTop: Platform.OS === "ios" ? SPACING.sm : SPACING.xl, // 8px iOS, 20px Android
+    paddingHorizontal: SPACING.lg,
+    paddingTop: Platform.OS === "ios" ? SPACING.sm : SPACING.xl,
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: SPACING.lg, // 16px
-    marginBottom: SPACING.md, // 12px
+    paddingVertical: SPACING.lg,
+    marginBottom: SPACING.md,
   },
   headerTitle: {
-    ...TYPOGRAPHY.h2, // Use h2 style for a prominent title
+    ...TYPOGRAPHY.h2,
     color: COLORS.textPrimary,
-    flexShrink: 1, // Allow text to shrink if button is wide
+    flexShrink: 1,
   },
   buttonOutline: {
-    paddingHorizontal: SPACING.md, // 12px
-    paddingVertical: SPACING.sm, // 8px
-    borderRadius: SPACING.sm, // 8px
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: SPACING.sm,
     borderWidth: 1.5,
     borderColor: COLORS.primary,
-    marginLeft: SPACING.md, // Space between title and button
+    marginLeft: SPACING.md,
   },
   buttonTextOutline: {
     ...TYPOGRAPHY.button,
     color: COLORS.primary,
     fontWeight: FONT_WEIGHTS.bold,
-    fontSize: TYPOGRAPHY.sizes.sm, // Slightly smaller for secondary action
+    fontSize: TYPOGRAPHY.sizes.sm,
   },
   buttonPrimary: {
     backgroundColor: COLORS.primary,
-    paddingVertical: SPACING.md, // 12px
-    borderRadius: SPACING.sm, // 8px
+    paddingVertical: SPACING.md,
+    borderRadius: SPACING.sm,
     alignItems: "center",
     justifyContent: "center",
-    marginVertical: SPACING.lg, // 16px
+    marginVertical: SPACING.lg,
     shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.3,
@@ -56,53 +57,75 @@ export const styles = StyleSheet.create({
     fontWeight: FONT_WEIGHTS.bold,
   },
   list: {
-    flex: 1, // Ensure list takes available space
+    flex: 1,
   },
   listHeader: {
-    ...TYPOGRAPHY.h3, // Use h3 style
-    fontSize: TYPOGRAPHY.sizes.xxl, // Adjust if h3 is too big
+    ...TYPOGRAPHY.h3,
+    fontSize: TYPOGRAPHY.sizes.xxl,
     color: COLORS.textPrimary,
-    marginBottom: SPACING.md, // 12px
-    marginTop: SPACING.sm, // 8px
+    marginBottom: SPACING.md,
+    marginTop: SPACING.sm,
   },
   rankingItemCard: {
     backgroundColor: COLORS.surface,
-    padding: SPACING.lg, // 16px
-    borderRadius: SPACING.md, // 12px
-    marginBottom: SPACING.md, // 12px
+    paddingVertical: SPACING.lg,
+    paddingHorizontal: SPACING.lg, // Consistent padding
+    borderRadius: SPACING.md,
+    marginBottom: SPACING.md,
     borderWidth: 1,
     borderColor: COLORS.border,
     shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.8, // More visible shadow
+    shadowOpacity: 0.08,
     shadowRadius: 3,
     elevation: 3,
+    flexDirection: "row",
+    justifyContent: "space-between", // This pushes content and button apart
+    alignItems: "center", // Vertically aligns items in the card
+  },
+  rankingItemContent: {
+    flex: 1, // Allows text content to take up available space
+    marginRight: SPACING.sm, // Add a small margin so text doesn't touch the button
   },
   rankingCity: {
-    ...TYPOGRAPHY.bodyMedium, // Use medium body text
-    fontSize: TYPOGRAPHY.sizes.lg, // 18px
+    ...TYPOGRAPHY.bodyMedium,
+    fontSize: TYPOGRAPHY.sizes.lg,
     color: COLORS.textPrimary,
     fontWeight: FONT_WEIGHTS.semiBold,
-    marginBottom: SPACING.xs, // 4px
+    marginBottom: SPACING.xs,
   },
   rankingScore: {
     ...TYPOGRAPHY.bodyRegular,
-    fontSize: TYPOGRAPHY.sizes.md, // 16px
+    fontSize: TYPOGRAPHY.sizes.md,
     color: COLORS.textSecondary,
   },
-  emptyContainer: {
-    flex: 1, // Allow it to take up space in FlatList's ListEmptyComponent
+  deleteButton: {
+    padding: SPACING.sm, // Hit area for the icon
+    // No background color for a more subtle icon-only button
+    // borderRadius: SPACING.pill, // If you wanted a circular background
+    marginLeft: SPACING.xs, // Keep some space from the content
     justifyContent: "center",
     alignItems: "center",
-    padding: SPACING.xl, // 20px
-    marginTop: SPACING["3xl"], // Push it down a bit
+  },
+  // deleteButtonText is not used if we only have an icon, but kept for consistency
+  // deleteButtonText: {
+  //   color: COLORS.error,
+  //   fontSize: TYPOGRAPHY.sizes.sm,
+  //   fontWeight: FONT_WEIGHTS.bold,
+  // },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: SPACING.xl,
+    marginTop: SPACING["3xl"],
   },
   emptyText: {
     ...TYPOGRAPHY.bodyRegular,
-    fontSize: TYPOGRAPHY.sizes.lg, // 18px
+    fontSize: TYPOGRAPHY.sizes.lg,
     color: COLORS.textMuted,
     textAlign: "center",
-    marginBottom: SPACING.sm, // 8px
+    marginBottom: SPACING.sm,
   },
   emptySubText: {
     ...TYPOGRAPHY.bodySmall,
@@ -111,12 +134,12 @@ export const styles = StyleSheet.create({
     opacity: 0.8,
   },
   loader: {
-    marginVertical: SPACING.xl, // 20px
+    marginVertical: SPACING.xl,
   },
   errorText: {
     ...TYPOGRAPHY.bodySmall,
     color: COLORS.error,
     textAlign: "center",
-    padding: SPACING.md, // 12px
+    padding: SPACING.md,
   },
 });

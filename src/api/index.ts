@@ -134,7 +134,10 @@ const apiService = {
   },
 
   // --- Cities Endpoints ---
-  getCities: async (skip: number = 0, limit: number = 20): Promise<City[]> => {
+  getCities: async (
+    skip: number = 0,
+    limit: number = 15000
+  ): Promise<City[]> => {
     const response = await fetch(
       `${API_BASE_URL}/cities/?skip=${skip}&limit=${limit}`,
       {
