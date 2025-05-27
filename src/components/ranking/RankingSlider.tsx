@@ -1,5 +1,12 @@
-import React, { useEffect, useCallback } from "react"; // Import useCallback from React
-import { View, Text, Dimensions } from "react-native";
+// src/components/ranking/RankingSlider.tsx
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  View,
+  Text,
+  Dimensions,
+  Platform,
+  StyleSheet as RNStyleSheet,
+} from "react-native";
 import {
   PanGestureHandler,
   TapGestureHandler,
@@ -10,25 +17,29 @@ import {
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  // withSpring, // Currently not used, can be removed or kept for future use
   runOnJS,
-  useAnimatedGestureHandler, // Ensure this is the one from 'react-native-reanimated'
+  useAnimatedGestureHandler,
+  interpolate,
+  Extrapolate,
+  // withSpring, // Available if needed
 } from "react-native-reanimated";
 
 import { styles } from "./RankingSlider.styles";
-import { SPACING } from "../../theme"; // Adjust path as needed
+import { SPACING, COLORS, TYPOGRAPHY } from "../../theme"; // Adjust path as needed
 
 interface RankingSliderProps {
-  initialScore?: number; // Score from 0 to 100
+  initialScore?: number;
   onScoreChange: (score: number) => void;
-  cityInitial?: string; // Optional: to display in the marker
+  cityInitial?: string;
   disabled?: boolean;
 }
 
 const TRACK_WIDTH_PERCENTAGE = 0.9;
-const MARKER_SIZE = SPACING["3xl"]; // 32
+const MARKER_SIZE =
+  styles.marker.width && typeof styles.marker.width === "number"
+    ? styles.marker.width
+    : SPACING["3xl"]; // Ensure MARKER_SIZE is a number
 
-// Define a type for the context object used in PanGestureHandler
 type PanGestureContext = {
   startX: number;
 };
@@ -39,58 +50,62 @@ export const RankingSlider: React.FC<RankingSliderProps> = ({
   cityInitial,
   disabled = false,
 }) => {
-  const screenWidth = Dimensions.get("window").width;
-  const componentPaddingHorizontal = SPACING.lg * 2; // Assuming styles.container has this padding
-  // trackWidth is the visual track, not the full component width
-  const calculatedTrackWidth =
-    (screenWidth - componentPaddingHorizontal) * TRACK_WIDTH_PERCENTAGE;
+  const translateX = useSharedValue(0); // Center position of the marker on the track
+  const trackWidth = useSharedValue(0); // Actual measured width of the track
 
-  const translateX = useSharedValue(0);
-  const currentScore = useSharedValue(initialScore);
-  const trackLayoutWidth = useSharedValue(0); // Will be set by onLayout
-
-  const internalScoreToPosition = useCallback(
-    (score: number, currentTrackWidth: number): number => {
-      if (currentTrackWidth === 0) return 0;
-      const position = (score / 100) * currentTrackWidth;
-      return Math.max(0, Math.min(position, currentTrackWidth));
+  const callOnScoreChange = useCallback(
+    (score: number) => {
+      onScoreChange(score);
     },
-    []
+    [onScoreChange]
   );
 
-  const internalPositionToScore = useCallback(
-    (position: number, currentTrackWidth: number): number => {
-      if (currentTrackWidth === 0) return 50; // Default if track not measured
-      const rawScore = (position / currentTrackWidth) * 100;
-      return Math.round(Math.max(0, Math.min(rawScore, 100)));
-    },
-    []
-  );
-
+  // Effect to update marker position if initialScore prop changes
   useEffect(() => {
-    if (trackLayoutWidth.value > 0) {
-      const initialPosition = internalScoreToPosition(
+    if (trackWidth.value > 0) {
+      // Only if track has been measured
+      const newPosition = interpolate(
         initialScore,
-        trackLayoutWidth.value
+        [0, 100],
+        [0, trackWidth.value],
+        Extrapolate.CLAMP
       );
-      translateX.value = initialPosition;
-      currentScore.value = initialScore;
+      if (isFinite(newPosition)) {
+        // Update translateX only if it's different to avoid unnecessary updates
+        // translateX.value = withTiming(newPosition, { duration: 50 }); // Optional: animate change
+        translateX.value = newPosition;
+      }
     }
-  }, [initialScore, trackLayoutWidth.value, internalScoreToPosition]);
+    // This effect primarily reacts to initialScore.
+    // trackWidth.value itself shouldn't be in dependencies to avoid Reanimated warnings.
+    // The onLayout callback will handle changes due to trackWidth.
+  }, [initialScore, trackWidth]); // Depend on trackWidth OBJECT for re-eval if it was remade,
+  // but the logic inside checks its .value.
+  // Reanimated's strict mode might still warn if it sees .value read here
+  // even if the effect is for initialScore.
+  // A more advanced pattern uses useAnimatedReaction for SV changes.
 
-  const updateScoreAndPosition = (
-    newPosition: number,
+  const updateScoreAndPositionFromGesture = (
+    newXPosition: number,
     currentTrackWidth: number
   ) => {
     "worklet";
+    if (currentTrackWidth === 0) return;
+
     const boundedPosition = Math.max(
       0,
-      Math.min(newPosition, currentTrackWidth)
+      Math.min(newXPosition, currentTrackWidth)
     );
-    translateX.value = boundedPosition;
-    const score = internalPositionToScore(boundedPosition, currentTrackWidth);
-    currentScore.value = score;
-    runOnJS(onScoreChange)(score);
+    if (isFinite(boundedPosition)) {
+      translateX.value = boundedPosition;
+      const newScore = interpolate(
+        boundedPosition,
+        [0, currentTrackWidth],
+        [0, 100],
+        Extrapolate.CLAMP
+      );
+      runOnJS(callOnScoreChange)(Math.round(newScore));
+    }
   };
 
   const panGestureEvent = useAnimatedGestureHandler<
@@ -102,25 +117,22 @@ export const RankingSlider: React.FC<RankingSliderProps> = ({
       ctx.startX = translateX.value;
     },
     onActive: (event, ctx) => {
-      if (disabled) return;
-      if (trackLayoutWidth.value > 0) {
-        const newPosition = ctx.startX + event.translationX;
-        updateScoreAndPosition(newPosition, trackLayoutWidth.value);
-      }
+      if (disabled || trackWidth.value === 0) return;
+      updateScoreAndPositionFromGesture(
+        ctx.startX + event.translationX,
+        trackWidth.value
+      );
     },
     onEnd: () => {
       if (disabled) return;
-      // translateX.value = withSpring(translateX.value); // Optional spring effect
+      // Optional: withSpring(translateX.value, { damping: 15, stiffness: 150 });
     },
   });
 
   const tapGestureEvent = (event: TapGestureHandlerStateChangeEvent) => {
-    if (disabled) return;
+    if (disabled || trackWidth.value === 0) return;
     if (event.nativeEvent.state === GestureState.ACTIVE) {
-      if (trackLayoutWidth.value > 0) {
-        const tapX = event.nativeEvent.x;
-        updateScoreAndPosition(tapX, trackLayoutWidth.value);
-      }
+      updateScoreAndPositionFromGesture(event.nativeEvent.x, trackWidth.value);
     }
   };
 
@@ -130,10 +142,30 @@ export const RankingSlider: React.FC<RankingSliderProps> = ({
     };
   });
 
+  const handleTrackLayout = useCallback(
+    (event: import("react-native").LayoutChangeEvent) => {
+      const newWidth = event.nativeEvent.layout.width;
+      if (newWidth > 0 && trackWidth.value !== newWidth) {
+        trackWidth.value = newWidth;
+        // When track width is first set or changes, re-apply initialScore to position marker
+        const initialPosition = interpolate(
+          initialScore, // Use the current initialScore prop
+          [0, 100],
+          [0, newWidth],
+          Extrapolate.CLAMP
+        );
+        if (isFinite(initialPosition)) {
+          translateX.value = initialPosition;
+        }
+      }
+    },
+    [initialScore, trackWidth]
+  ); // trackWidth object as dependency is fine for useCallback
+
   return (
     <View style={styles.container}>
       <Text style={styles.instructionText}>
-        Tap or drag on the line to set your initial rating.
+        Tap or drag on the line to set your rating.
       </Text>
       <TapGestureHandler
         onHandlerStateChange={tapGestureEvent}
@@ -141,17 +173,7 @@ export const RankingSlider: React.FC<RankingSliderProps> = ({
       >
         <Animated.View
           style={styles.trackContainer}
-          onLayout={(event) => {
-            const { width } = event.nativeEvent.layout;
-            if (trackLayoutWidth.value === 0 && width > 0) {
-              trackLayoutWidth.value = width;
-              const initialPosition = internalScoreToPosition(
-                currentScore.value,
-                width
-              );
-              translateX.value = initialPosition;
-            }
-          }}
+          onLayout={handleTrackLayout} // Use memoized layout handler
         >
           <View style={styles.track} />
           <PanGestureHandler
