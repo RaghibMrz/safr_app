@@ -9,6 +9,7 @@ import React, {
 import {
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   ActivityIndicator,
   FlatList,
@@ -17,14 +18,16 @@ import {
   StatusBar,
   Platform,
   KeyboardAvoidingView,
-  TextInput,
+  Keyboard, // Import Keyboard
+  TouchableWithoutFeedback, // To dismiss keyboard
 } from "react-native";
 import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons"; // For a placeholder city icon
 
 import { AuthContext } from "../../src/context/AuthContext";
 import apiService from "../../src/api";
-import { COLORS, TYPOGRAPHY, SPACING } from "../../src/theme";
-import { styles } from "../../src/screens/tabs/addRanking.styles";
+import { COLORS, TYPOGRAPHY, SPACING, FONT_WEIGHTS } from "../../src/theme";
+import { styles } from "../../src/screens/tabs/addRanking.styles"; // Ensure this path is correct
 import { RankingSlider } from "../../src/components/ranking/RankingSlider";
 
 interface City {
@@ -33,120 +36,38 @@ interface City {
   country: string;
 }
 
-interface RankingListHeaderProps {
-  searchTerm: string;
-  setSearchTerm: (text: string) => void;
-  fetchError: string;
-  isSubmitting: boolean;
-}
-
-const RankingListHeader: React.FC<RankingListHeaderProps> = React.memo(
-  ({ searchTerm, setSearchTerm, fetchError, isSubmitting }) => {
-    return (
-      <View style={styles.listHeaderContainer}>
-        {fetchError && <Text style={styles.errorText}>{fetchError}</Text>}
-        <Text style={styles.label}>Search and Select a City</Text>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Type to search cities..."
-          placeholderTextColor={COLORS.placeholder}
-          value={searchTerm}
-          onChangeText={setSearchTerm}
-          autoCapitalize="words"
-          returnKeyType="search"
-          autoCorrect={false}
-          spellCheck={false}
-          editable={!isSubmitting}
-        />
-      </View>
-    );
-  }
-);
-
-interface RankingListFooterProps {
-  selectedCity: City | null;
-  score: number;
-  onScoreChange: (newScore: number) => void;
-  isSubmitting: boolean;
-  isLoadingCities: boolean;
-  submitError: string;
-  handleAddOrUpdateRanking: () => Promise<void>;
-  cityInitial?: string;
-}
-
-const RankingListFooter: React.FC<RankingListFooterProps> = React.memo(
-  ({
-    selectedCity,
-    score,
-    onScoreChange,
-    isSubmitting,
-    isLoadingCities,
-    submitError,
-    handleAddOrUpdateRanking,
-    cityInitial,
-  }) => {
-    return (
-      <View style={styles.listFooterContainer}>
-        {selectedCity && (
-          <Text style={styles.selectedCityText}>
-            Selected: {selectedCity.name}, {selectedCity.country}
-          </Text>
-        )}
-        <Text style={styles.label}>Set Your Personal Score (0-100)</Text>
-
-        <RankingSlider
-          initialScore={score}
-          onScoreChange={onScoreChange}
-          cityInitial={cityInitial}
-          disabled={!selectedCity || isSubmitting}
-        />
-
-        {isSubmitting ? (
-          <ActivityIndicator
-            size="large"
-            color={COLORS.primary}
-            style={styles.loader}
-          />
-        ) : (
-          <TouchableOpacity
-            style={[
-              styles.buttonPrimary,
-              !selectedCity && styles.buttonDisabled,
-            ]}
-            onPress={handleAddOrUpdateRanking}
-            disabled={!selectedCity || isLoadingCities || isSubmitting}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.buttonTextPrimary}>Submit Ranking</Text>
-          </TouchableOpacity>
-        )}
-        {submitError && <Text style={styles.errorText}>{submitError}</Text>}
-      </View>
-    );
-  }
-);
-
 export default function AddRankingScreen() {
   const authContext = useContext(AuthContext);
   const router = useRouter();
 
-  // All useState, useCallback, useEffect, useMemo hooks MUST be called here,
-  // before any conditional returns.
   const [allCities, setAllCities] = useState<City[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>("");
+
   const [selectedCity, setSelectedCity] = useState<City | null>(null);
   const [score, setScore] = useState<number>(50);
   const [isLoadingCities, setIsLoadingCities] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fetchError, setFetchError] = useState("");
   const [submitError, setSubmitError] = useState("");
+  const [isSearchFocused, setIsSearchFocused] = useState(false); // New state for search focus
+
+  if (!authContext) {
+    console.error("AuthContext is not available in AddRankingScreen.");
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.centeredLoaderContainer}>
+          <Text style={{ color: COLORS.error }}>Service unavailable.</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const fetchCities = useCallback(async () => {
     setIsLoadingCities(true);
     setFetchError("");
     try {
-      const cityData = await apiService.getCities(0, 500);
+      const cityData = await apiService.getCities(0, 1000); // Fetch more for better client-side search
       setAllCities(cityData);
     } catch (e: any) {
       setFetchError(e.message || "Failed to load cities. Please try again.");
@@ -163,17 +84,17 @@ export default function AddRankingScreen() {
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
-    }, 300);
+    }, 300); // Debounce search term
 
     return () => {
       clearTimeout(handler);
     };
   }, [searchTerm]);
 
-  const displayedCities = useMemo(() => {
+  const filteredCities = useMemo(() => {
     const trimmedSearch = debouncedSearchTerm.trim().toLowerCase();
     if (!trimmedSearch) {
-      return [];
+      return []; // Only show results if there's a search term
     }
     return allCities.filter(
       (city) =>
@@ -182,31 +103,21 @@ export default function AddRankingScreen() {
     );
   }, [allCities, debouncedSearchTerm]);
 
+  const handleCitySelection = (city: City) => {
+    setSelectedCity(city);
+    setSearchTerm(city.name); // Optionally fill search bar with selected city name
+    setIsSearchFocused(false); // Hide search results
+    Keyboard.dismiss(); // Dismiss keyboard
+    setScore(50); // Reset score for the new city
+  };
+
   const handleScoreChange = useCallback((newScore: number) => {
     setScore(newScore);
   }, []);
 
-  const cityInitialForSlider = useMemo(() => {
-    // Moved this hook up
-    return selectedCity ? selectedCity.name.charAt(0).toUpperCase() : undefined;
-  }, [selectedCity]);
-
-  // AuthContext check - if context is truly unavailable, it's a critical setup error.
-  // This early return is for a catastrophic failure, not typical conditional rendering.
-  if (!authContext) {
-    console.error("AuthContext is not available in AddRankingScreen.");
-    return (
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.centeredLoaderContainer}>
-          <Text style={{ color: COLORS.error }}>Service unavailable.</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
   const handleAddOrUpdateRanking = async () => {
     if (!selectedCity) {
-      setSubmitError("Please select a city from the search results to rank.");
+      setSubmitError("Please select a city to rank.");
       return;
     }
     if (score < 0 || score > 100) {
@@ -245,14 +156,8 @@ export default function AddRankingScreen() {
 
   const renderCityPickerItem = ({ item }: { item: City }) => (
     <TouchableOpacity
-      style={[
-        styles.cityPickerItem,
-        selectedCity?.id === item.id && styles.cityPickerItemSelected,
-      ]}
-      onPress={() => {
-        setSelectedCity(item);
-        setScore(50);
-      }}
+      style={styles.cityPickerItem}
+      onPress={() => handleCitySelection(item)}
       activeOpacity={0.7}
     >
       <Text style={styles.cityPickerItemText}>
@@ -261,7 +166,11 @@ export default function AddRankingScreen() {
     </TouchableOpacity>
   );
 
-  // Conditional rendering for loading state happens AFTER all hooks are called.
+  const cityInitialForSlider = useMemo(() => {
+    return selectedCity ? selectedCity.name.charAt(0).toUpperCase() : undefined;
+  }, [selectedCity]);
+
+  // Show main loader only if cities haven't been fetched at all yet
   if (isLoadingCities && allCities.length === 0) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -286,55 +195,135 @@ export default function AddRankingScreen() {
         style={styles.keyboardAvoidingContainer}
         keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 0}
       >
-        <View style={styles.screenContainer}>
-          <FlatList
-            data={displayedCities}
-            renderItem={renderCityPickerItem}
-            keyExtractor={(item) => item.id.toString()}
-            style={styles.cityList}
-            ListHeaderComponent={
-              <RankingListHeader
-                searchTerm={searchTerm}
-                setSearchTerm={setSearchTerm}
-                fetchError={fetchError}
-                isSubmitting={isSubmitting}
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+          <View style={styles.screenContainer}>
+            <View style={styles.searchContainer}>
+              <Text style={styles.label}>Search for a City to Rank</Text>
+              <TextInput
+                style={styles.searchInput}
+                placeholder="e.g., London, Paris, Tokyo..."
+                placeholderTextColor={COLORS.placeholder}
+                value={searchTerm}
+                onChangeText={(text) => {
+                  setSearchTerm(text);
+                  if (!isSearchFocused && text.length > 0) {
+                    setIsSearchFocused(true); // Show results when user starts typing
+                  } else if (text.length === 0) {
+                    setIsSearchFocused(false); // Hide results if search term is cleared
+                    setSelectedCity(null); // Also clear selected city if search is cleared
+                  }
+                }}
+                onFocus={() => setIsSearchFocused(true)}
+                // onBlur={() => setIsSearchFocused(false)} // Be careful with onBlur, selection might trigger it
+                autoCapitalize="words"
+                returnKeyType="search"
+                autoCorrect={false}
+                spellCheck={false}
               />
-            }
-            ListFooterComponent={
-              <RankingListFooter
-                selectedCity={selectedCity}
-                score={score}
-                onScoreChange={handleScoreChange}
-                isSubmitting={isSubmitting}
-                isLoadingCities={isLoadingCities}
-                submitError={submitError}
-                handleAddOrUpdateRanking={handleAddOrUpdateRanking}
-                cityInitial={cityInitialForSlider}
-              />
-            }
-            ListEmptyComponent={
-              !isLoadingCities && debouncedSearchTerm.trim() ? (
-                <View style={{ padding: SPACING.xl }}>
-                  <Text style={styles.emptyText}>
-                    No cities match "{debouncedSearchTerm}".
+            </View>
+
+            {isSearchFocused && searchTerm.trim().length > 0 && (
+              <View style={styles.searchResultsContainer}>
+                {isLoadingCities && allCities.length > 0 ? ( // Show small loader if filtering a large list
+                  <ActivityIndicator
+                    size="small"
+                    color={COLORS.primary}
+                    style={{ marginVertical: SPACING.md }}
+                  />
+                ) : filteredCities.length > 0 ? (
+                  <FlatList
+                    data={filteredCities}
+                    renderItem={renderCityPickerItem}
+                    keyExtractor={(item) => item.id.toString()}
+                    style={styles.cityList} // Style for the list itself
+                    keyboardShouldPersistTaps="handled"
+                  />
+                ) : (
+                  <Text style={styles.emptyListText}>
+                    {debouncedSearchTerm
+                      ? `No cities match "${debouncedSearchTerm}".`
+                      : "Keep typing..."}
+                  </Text>
+                )}
+              </View>
+            )}
+
+            {/* Ranking Section - Only visible if a city is selected and search is not focused */}
+            {!isSearchFocused && selectedCity && (
+              <View style={styles.rankingSection}>
+                <View style={styles.selectedCityDisplayContainer}>
+                  {/* Placeholder for the draggable city symbol */}
+                  <Ionicons
+                    name="location-sharp"
+                    size={48}
+                    color={COLORS.primary}
+                  />
+                  <Text style={styles.selectedCityName}>
+                    {selectedCity.name}, {selectedCity.country}
+                  </Text>
+                  <Text style={styles.selectedCityPrompt}>
+                    Now, "throw" or drag this city onto the line below!
                   </Text>
                 </View>
-              ) : !isLoadingCities && !debouncedSearchTerm.trim() ? (
-                <View style={{ padding: SPACING.xl }}>
-                  <Text style={styles.emptyText}>
-                    Start typing to search for a city.
+
+                <View style={styles.scoreAndSubmitContainer}>
+                  <Text style={styles.label}>
+                    Set Your Personal Score (0-100)
                   </Text>
-                  {fetchError && (
-                    <Text style={styles.errorText}>{fetchError}</Text>
+                  <RankingSlider
+                    initialScore={score}
+                    onScoreChange={handleScoreChange}
+                    cityInitial={cityInitialForSlider}
+                    disabled={isSubmitting}
+                  />
+
+                  {isSubmitting ? (
+                    <ActivityIndicator
+                      size="large"
+                      color={COLORS.primary}
+                      style={styles.loader}
+                    />
+                  ) : (
+                    <TouchableOpacity
+                      style={[
+                        styles.buttonPrimary,
+                        !selectedCity && styles.buttonDisabled,
+                      ]}
+                      onPress={handleAddOrUpdateRanking}
+                      disabled={!selectedCity || isSubmitting}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.buttonTextPrimary}>
+                        Submit Ranking
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                  {submitError && (
+                    <Text style={styles.errorText}>{submitError}</Text>
                   )}
                 </View>
-              ) : null
-            }
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: SPACING.xl }}
-            keyboardShouldPersistTaps="handled"
-          />
-        </View>
+              </View>
+            )}
+
+            {/* Prompt to search if no city is selected and search is not focused */}
+            {!isSearchFocused && !selectedCity && !isLoadingCities && (
+              <View
+                style={{
+                  flex: 1,
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <Text style={styles.emptyListText}>
+                  Search above to find a city and rank it.
+                </Text>
+                {fetchError && (
+                  <Text style={styles.errorText}>{fetchError}</Text>
+                )}
+              </View>
+            )}
+          </View>
+        </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
