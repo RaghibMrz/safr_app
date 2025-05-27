@@ -1,6 +1,16 @@
 // api.ts
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+// --- Custom Error for Unauthorized responses ---
+export class UnauthorizedError extends Error {
+  constructor(message?: string) {
+    super(message);
+    this.name = "UnauthorizedError";
+    // This is important for instanceof checks
+    Object.setPrototypeOf(this, UnauthorizedError.prototype);
+  }
+}
+
 // --- Configuration ---
 // IMPORTANT: Replace with your actual backend URL.
 // - For Android Emulator (if backend is on localhost): 'http://10.0.2.2:8000'
@@ -12,6 +22,44 @@ const API_BASE_URL = "http://192.168.1.42:8000";
 // --- Helper to get the auth token ---
 const getAuthToken = async (): Promise<string | null> => {
   return await AsyncStorage.getItem("userToken");
+};
+
+// --- Helper for authenticated API calls ---
+const authenticatedFetch = async (endpoint: string, options: RequestInit = {}) => {
+  const authToken = await getAuthToken();
+  if (!authToken) {
+    throw new UnauthorizedError("Authentication token not found. Please log in.");
+  }
+
+  const headers = {
+    ...options.headers,
+    'Authorization': `Bearer ${authToken}`,
+    'Accept': 'application/json',
+  };
+  
+  // Ensure 'Content-Type' is included for relevant methods
+  if (options.method && ['POST', 'PUT', 'PATCH'].includes(options.method.toUpperCase())) {
+    headers['Content-Type'] = headers['Content-Type'] || 'application/json';
+  }
+
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    ...options,
+    headers,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ detail: `Request failed with status ${response.status}` }));
+    if (response.status === 401) {
+      throw new UnauthorizedError(errorData.detail || `Unauthorized: Access to ${endpoint} denied.`);
+    }
+    throw new Error(errorData.detail || `API request to ${endpoint} failed with status ${response.status}`);
+  }
+  
+  // For 204 No Content, return null or a specific indicator, as response.json() will fail
+  if (response.status === 204) {
+    return null; 
+  }
+  return await response.json();
 };
 
 // --- Define expected response types (mirroring FastAPI Pydantic schemas) ---
@@ -104,33 +152,38 @@ const apiService = {
   },
 
   getCurrentUser: async (token?: string): Promise<UserInfo> => {
-    const authToken = token || (await getAuthToken());
-    if (!authToken) {
-      throw new Error("Authentication token not found.");
+    // If a token is passed directly (e.g. after login), use it. Otherwise authenticatedFetch will get it.
+    // This direct token passing is primarily for the login flow.
+    // For general use, authenticatedFetch handles token retrieval.
+    if (token) {
+       const response = await fetch(`${API_BASE_URL}/users/me`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+          },
+        });
+         if (!response.ok) {
+          const errorData = await response
+            .json()
+            .catch(() => ({ detail: "Failed to fetch user info" }));
+          if (response.status === 401) {
+             throw new UnauthorizedError(errorData.detail || "User is not authorized");
+          }
+          throw new Error(errorData.detail || "Failed to fetch user info");
+        }
+        return (await response.json()) as UserInfo;
     }
-
-    const response = await fetch(`${API_BASE_URL}/users/me`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${authToken}`,
-        Accept: "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      const errorData = await response
-        .json()
-        .catch(() => ({ detail: "Failed to fetch user info" }));
-      if (response.status === 401) {
-        // Unauthorized, token might be invalid/expired
-        // Consider triggering a logout or token refresh mechanism here
-        // For now, just remove potentially bad stored data
-        await AsyncStorage.removeItem("userToken");
-        await AsyncStorage.removeItem("userInfo");
+    // For calls from within the app after login, rely on authenticatedFetch
+    try {
+      return await authenticatedFetch("/users/me", { method: "GET" }) as UserInfo;
+    } catch (error) {
+      if (error instanceof UnauthorizedError) {
+        throw error; // Re-throw UnauthorizedError as is
       }
-      throw new Error(errorData.detail || "Failed to fetch user info");
+      // Customize generic error message if needed for this specific endpoint
+      throw new Error(error.message || "Failed to fetch user info via authenticatedFetch");
     }
-    return (await response.json()) as UserInfo;
   },
 
   // --- Cities Endpoints ---
@@ -159,78 +212,39 @@ const apiService = {
 
   // --- Rankings Endpoints ---
   getUserRankings: async (): Promise<UserCityRanking[]> => {
-    const authToken = await getAuthToken();
-    if (!authToken) {
-      throw new Error("Authentication required to fetch rankings.");
+    try {
+      return await authenticatedFetch("/rankings/me", { method: "GET" }) as UserCityRanking[];
+    } catch (error) {
+      // Log or transform error if needed, otherwise rethrow
+      console.error("Error in getUserRankings:", error);
+      throw error;
     }
-
-    const response = await fetch(`${API_BASE_URL}/rankings/me`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${authToken}`,
-        Accept: "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      const errorData = await response
-        .json()
-        .catch(() => ({ detail: "Failed to fetch rankings" }));
-      throw new Error(errorData.detail || "Failed to fetch rankings");
-    }
-    return (await response.json()) as UserCityRanking[];
   },
 
   addOrUpdateRanking: async (
     cityId: number,
     personalScore: number
   ): Promise<UserCityRanking> => {
-    const authToken = await getAuthToken();
-    if (!authToken) {
-      throw new Error("Authentication required to update ranking.");
+    try {
+      return await authenticatedFetch(`/rankings/cities/${cityId}`, {
+        method: "PUT",
+        body: JSON.stringify({ personal_score: personalScore }),
+        // 'Content-Type': 'application/json' is now handled by authenticatedFetch
+      }) as UserCityRanking;
+    } catch (error) {
+      console.error("Error in addOrUpdateRanking:", error);
+      throw error;
     }
-
-    const response = await fetch(`${API_BASE_URL}/rankings/cities/${cityId}`, {
-      method: "PUT",
-      headers: {
-        Authorization: `Bearer ${authToken}`,
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify({ personal_score: personalScore }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response
-        .json()
-        .catch(() => ({ detail: "Failed to update ranking" }));
-      throw new Error(errorData.detail || "Failed to add/update ranking");
-    }
-    return (await response.json()) as UserCityRanking;
   },
 
   deleteRanking: async (cityId: number): Promise<void> => {
-    const authToken = await getAuthToken();
-    if (!authToken) {
-      throw new Error("Authentication required to delete ranking.");
+    try {
+      await authenticatedFetch(`/rankings/cities/${cityId}`, { method: "DELETE" });
+      // No return needed as it's Promise<void>
+    } catch (error) {
+      console.error("Error in deleteRanking:", error);
+      throw error;
     }
-
-    const response = await fetch(`${API_BASE_URL}/rankings/cities/${cityId}`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${authToken}`,
-        Accept: "application/json", // Even for 204, good to specify
-      },
-    });
-
-    if (!response.ok && response.status !== 204) {
-      // 204 is a success for DELETE
-      const errorData = await response
-        .json()
-        .catch(() => ({ detail: "Failed to delete ranking" }));
-      throw new Error(errorData.detail || "Failed to delete ranking");
-    }
-    // No content to parse for 204 response
   },
 };
 

@@ -21,7 +21,7 @@ import {
   View,
 } from "react-native";
 
-import apiService from "../../src/api";
+import apiService, { UnauthorizedError } from "../../src/api";
 import { AuthContext } from "../../src/context/AuthContext";
 import { styles } from "../../src/screens/tabs/addRanking.styles"; // Ensure this path is correct
 import { COLORS, SPACING } from "../../src/theme";
@@ -137,6 +137,18 @@ export default function AddRankingScreen() {
   const authContext = useContext(AuthContext);
   const router = useRouter();
 
+  if (!authContext) { // This check should already be there, ensure it is.
+    console.error("AuthContext is not available in AddRankingScreen.");
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.centeredLoaderContainer}>
+          <Text style={{ color: COLORS.error }}>Service unavailable.</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+  const { logout } = authContext; // Destructure logout
+
   const [allCities, setAllCities] = useState<City[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>("");
@@ -235,9 +247,19 @@ export default function AddRankingScreen() {
         ]
       );
     } catch (e: any) {
-      setSubmitError(
-        e.message || "Failed to submit ranking. Please try again."
-      );
+      if (e instanceof UnauthorizedError) {
+        setSubmitError("Session expired. Please log in again.");
+        // Alert the user and then log out
+        Alert.alert(
+          "Session Expired",
+          "Your session has expired. Please log in again.",
+          [{ text: "OK", onPress: logout }] // Call logout from AuthContext
+        );
+      } else {
+        setSubmitError(
+          e.message || "Failed to submit ranking. Please try again."
+        );
+      }
     } finally {
       setIsSubmitting(false);
     }

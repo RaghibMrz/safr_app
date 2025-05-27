@@ -9,7 +9,7 @@ import React, {
 } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 // We will create api.ts in the next step.
-import apiService from "../api"; // Assuming api.ts will be in the same directory
+import apiService, { UnauthorizedError } from "../api"; // Assuming api.ts will be in the same directory
 
 // Define types for the user information and context value
 interface UserInfo {
@@ -123,6 +123,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               "Error fetching user info with stored token:",
               fetchError
             );
+            if (fetchError instanceof UnauthorizedError) {
+              console.log("Token is invalid or expired. Logging out.");
+            } else {
+              console.log("Some other error occurred while fetching user info with token. Logging out.");
+            }
             await logout(); // Attempt to clear corrupted/stale state
           }
         }

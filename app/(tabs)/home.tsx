@@ -14,7 +14,7 @@ import {
   View,
 } from "react-native";
 
-import apiService from "../../src/api";
+import apiService, { UnauthorizedError } from "../../src/api";
 import { AuthContext } from "../../src/context/AuthContext";
 import { styles } from "../../src/screens/tabs/home.styles"; // Ensure this path is correct
 import { COLORS, SPACING, TYPOGRAPHY } from "../../src/theme"; // Added SPACING for icon button
@@ -66,7 +66,12 @@ export default function HomeScreen() {
       const data = await apiService.getUserRankings();
       setRankings(data);
     } catch (e: any) {
-      setError(e.message || "Failed to fetch your ranked cities.");
+      if (e instanceof UnauthorizedError) {
+        setError("Session expired. Please log in again.");
+        logout(); // Call logout from AuthContext
+      } else {
+        setError(e.message || "Failed to fetch your ranked cities.");
+      }
       setRankings([]);
     } finally {
       setIsLoading(false);
@@ -105,15 +110,18 @@ export default function HomeScreen() {
                 `${rankingItem.city.name} ranking has been removed.`
               );
             } catch (e: any) {
-              setError(
-                e.message ||
-                  `Failed to delete ranking for ${rankingItem.city.name}.`
-              );
-              Alert.alert(
-                "Error",
-                e.message ||
-                  `Failed to delete ranking for ${rankingItem.city.name}.`
-              );
+              if (e instanceof UnauthorizedError) {
+                setError("Session expired. Please log in again.");
+                Alert.alert(
+                  "Session Expired",
+                  "Your session has expired. Please log in again.",
+                  [{ text: "OK", onPress: logout }] // Call logout from AuthContext
+                );
+              } else {
+                const errorMessage = e.message || `Failed to delete ranking for ${rankingItem.city.name}.`;
+                setError(errorMessage);
+                Alert.alert("Error", errorMessage);
+              }
             } finally {
               setIsDeleting(null); // Clear loading state for this item
             }
