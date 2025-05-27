@@ -1,20 +1,20 @@
 // app/_layout.tsx
-import { Stack, useRouter, useSegments } from "expo-router";
 import React, { useContext, useEffect } from "react";
+import { Stack, useRouter, useSegments } from "expo-router";
 import {
   ActivityIndicator,
-  Platform,
+  View,
+  Text,
+  StyleSheet,
   SafeAreaView,
   StatusBar,
-  StyleSheet,
-  Text,
-  View,
+  Platform,
 } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler"; // Import GestureHandlerRootView
 
-import { AuthContext, AuthProvider } from "../src/context/AuthContext";
-import { COLORS, SPACING, TYPOGRAPHY } from "../src/theme";
+import { AuthProvider, AuthContext } from "../src/context/AuthContext";
+import { COLORS, TYPOGRAPHY, SPACING } from "../src/theme";
 
-// This is the component that contains the main logic for loading and redirection
 function InitialLayout() {
   const authContext = useContext(AuthContext);
   const segments = useSegments();
@@ -22,21 +22,17 @@ function InitialLayout() {
 
   useEffect(() => {
     if (authContext?.isLoading) {
-      return; // Don't navigate while still loading auth state
+      return;
     }
 
     const inAuthGroup = segments[0] === "(auth)";
 
     if (authContext?.userToken) {
-      // User is signed in
       if (inAuthGroup) {
-        // If in auth group (e.g. login page), redirect to main app (tabs)
         router.replace("/(tabs)/home");
       }
     } else {
-      // User is not signed in
       if (!inAuthGroup) {
-        // If not in auth group (e.g. tried to access a tab directly), redirect to login
         router.replace("/(auth)/login");
       }
     }
@@ -44,6 +40,9 @@ function InitialLayout() {
 
   if (authContext?.isLoading) {
     return (
+      // SafeAreaView for loading state should also be inside GestureHandlerRootView
+      // but for simplicity, we'll ensure the main content stack is wrapped.
+      // The loading screen itself doesn't use gestures.
       <SafeAreaView style={styles.safeArea}>
         <StatusBar
           barStyle={Platform.OS === "ios" ? "dark-content" : "dark-content"}
@@ -57,25 +56,21 @@ function InitialLayout() {
     );
   }
 
-  // This Stack is the root navigator for your app.
-  // It will render either the (auth) or (tabs) group based on the redirection logic.
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="(tabs)" />
-      {/* Expo Router automatically handles a "+not-found" screen if you create one */}
-      {/* <Stack.Screen name="+not-found" /> */}
     </Stack>
   );
 }
 
-// This is the component that Expo Router will render as the root layout.
-// It provides the AuthContext to the rest of the application.
 export default function RootAppLayout() {
   return (
-    <AuthProvider>
-      <InitialLayout />
-    </AuthProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AuthProvider>
+        <InitialLayout />
+      </AuthProvider>
+    </GestureHandlerRootView>
   );
 }
 

@@ -1,30 +1,31 @@
 // app/(tabs)/addRanking.tsx
-import { useRouter } from "expo-router";
 import React, {
-  useCallback,
+  useState,
   useContext,
   useEffect,
+  useCallback,
   useMemo,
-  useState,
 } from "react";
 import {
+  View,
+  Text,
+  TouchableOpacity,
   ActivityIndicator,
-  Alert,
   FlatList,
-  KeyboardAvoidingView,
-  Platform,
+  Alert,
   SafeAreaView,
   StatusBar,
-  Text,
+  Platform,
+  KeyboardAvoidingView,
   TextInput,
-  TouchableOpacity,
-  View,
 } from "react-native";
+import { useRouter } from "expo-router";
 
-import apiService from "../../src/api";
 import { AuthContext } from "../../src/context/AuthContext";
-import { styles } from "../../src/screens/tabs/addRanking.styles"; // Ensure this path is correct
-import { COLORS, SPACING } from "../../src/theme";
+import apiService from "../../src/api";
+import { COLORS, TYPOGRAPHY, SPACING } from "../../src/theme";
+import { styles } from "../../src/screens/tabs/addRanking.styles";
+import { RankingSlider } from "../../src/components/ranking/RankingSlider";
 
 interface City {
   id: number;
@@ -35,22 +36,15 @@ interface City {
 interface RankingListHeaderProps {
   searchTerm: string;
   setSearchTerm: (text: string) => void;
-  fetchError: string; // Renamed from 'error' for clarity
+  fetchError: string;
   isSubmitting: boolean;
 }
 
 const RankingListHeader: React.FC<RankingListHeaderProps> = React.memo(
-  ({
-    searchTerm,
-    setSearchTerm,
-    fetchError, // Use fetchError here
-    isSubmitting,
-  }) => {
+  ({ searchTerm, setSearchTerm, fetchError, isSubmitting }) => {
     return (
       <View style={styles.listHeaderContainer}>
-        {fetchError && !isSubmitting && (
-          <Text style={styles.errorText}>{fetchError}</Text>
-        )}
+        {fetchError && <Text style={styles.errorText}>{fetchError}</Text>}
         <Text style={styles.label}>Search and Select a City</Text>
         <TextInput
           style={styles.searchInput}
@@ -62,6 +56,7 @@ const RankingListHeader: React.FC<RankingListHeaderProps> = React.memo(
           returnKeyType="search"
           autoCorrect={false}
           spellCheck={false}
+          editable={!isSubmitting}
         />
       </View>
     );
@@ -70,23 +65,25 @@ const RankingListHeader: React.FC<RankingListHeaderProps> = React.memo(
 
 interface RankingListFooterProps {
   selectedCity: City | null;
-  score: string;
-  setScore: (text: string) => void;
+  score: number;
+  onScoreChange: (newScore: number) => void;
   isSubmitting: boolean;
   isLoadingCities: boolean;
-  submitError: string; // Renamed from 'error' for clarity
+  submitError: string;
   handleAddOrUpdateRanking: () => Promise<void>;
+  cityInitial?: string;
 }
 
 const RankingListFooter: React.FC<RankingListFooterProps> = React.memo(
   ({
     selectedCity,
     score,
-    setScore,
+    onScoreChange,
     isSubmitting,
     isLoadingCities,
-    submitError, // Use submitError here
+    submitError,
     handleAddOrUpdateRanking,
+    cityInitial,
   }) => {
     return (
       <View style={styles.listFooterContainer}>
@@ -95,17 +92,15 @@ const RankingListFooter: React.FC<RankingListFooterProps> = React.memo(
             Selected: {selectedCity.name}, {selectedCity.country}
           </Text>
         )}
-        <Text style={styles.label}>Your Personal Score (0-100)</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="e.g., 85.5"
-          placeholderTextColor={COLORS.placeholder}
-          value={score}
-          onChangeText={setScore}
-          keyboardType="numeric"
-          returnKeyType="done"
-          onSubmitEditing={handleAddOrUpdateRanking}
+        <Text style={styles.label}>Set Your Personal Score (0-100)</Text>
+
+        <RankingSlider
+          initialScore={score}
+          onScoreChange={onScoreChange}
+          cityInitial={cityInitial}
+          disabled={!selectedCity || isSubmitting}
         />
+
         {isSubmitting ? (
           <ActivityIndicator
             size="large"
@@ -116,12 +111,10 @@ const RankingListFooter: React.FC<RankingListFooterProps> = React.memo(
           <TouchableOpacity
             style={[
               styles.buttonPrimary,
-              (!selectedCity || !score.trim()) && styles.buttonDisabled,
+              !selectedCity && styles.buttonDisabled,
             ]}
             onPress={handleAddOrUpdateRanking}
-            disabled={
-              !selectedCity || !score.trim() || isLoadingCities || isSubmitting
-            }
+            disabled={!selectedCity || isLoadingCities || isSubmitting}
             activeOpacity={0.8}
           >
             <Text style={styles.buttonTextPrimary}>Submit Ranking</Text>
@@ -137,33 +130,23 @@ export default function AddRankingScreen() {
   const authContext = useContext(AuthContext);
   const router = useRouter();
 
+  // All useState, useCallback, useEffect, useMemo hooks MUST be called here,
+  // before any conditional returns.
   const [allCities, setAllCities] = useState<City[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>("");
-
   const [selectedCity, setSelectedCity] = useState<City | null>(null);
-  const [score, setScore] = useState<string>("");
+  const [score, setScore] = useState<number>(50);
   const [isLoadingCities, setIsLoadingCities] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fetchError, setFetchError] = useState("");
   const [submitError, setSubmitError] = useState("");
 
-  if (!authContext) {
-    console.error("AuthContext is not available in AddRankingScreen.");
-    return (
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.centeredLoaderContainer}>
-          <Text style={{ color: COLORS.error }}>Service unavailable.</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
   const fetchCities = useCallback(async () => {
     setIsLoadingCities(true);
     setFetchError("");
     try {
-      const cityData = await apiService.getCities(0, 15000);
+      const cityData = await apiService.getCities(0, 500);
       setAllCities(cityData);
     } catch (e: any) {
       setFetchError(e.message || "Failed to load cities. Please try again.");
@@ -199,25 +182,42 @@ export default function AddRankingScreen() {
     );
   }, [allCities, debouncedSearchTerm]);
 
+  const handleScoreChange = useCallback((newScore: number) => {
+    setScore(newScore);
+  }, []);
+
+  const cityInitialForSlider = useMemo(() => {
+    // Moved this hook up
+    return selectedCity ? selectedCity.name.charAt(0).toUpperCase() : undefined;
+  }, [selectedCity]);
+
+  // AuthContext check - if context is truly unavailable, it's a critical setup error.
+  // This early return is for a catastrophic failure, not typical conditional rendering.
+  if (!authContext) {
+    console.error("AuthContext is not available in AddRankingScreen.");
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.centeredLoaderContainer}>
+          <Text style={{ color: COLORS.error }}>Service unavailable.</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   const handleAddOrUpdateRanking = async () => {
     if (!selectedCity) {
       setSubmitError("Please select a city from the search results to rank.");
       return;
     }
-    if (!score.trim()) {
-      setSubmitError("Please enter a score for the selected city.");
-      return;
-    }
-    const numericScore = parseFloat(score);
-    if (isNaN(numericScore) || numericScore < 0 || numericScore > 100) {
-      setSubmitError("Score must be a number between 0 and 100.");
+    if (score < 0 || score > 100) {
+      setSubmitError("Score must be between 0 and 100.");
       return;
     }
 
     setIsSubmitting(true);
     setSubmitError("");
     try {
-      await apiService.addOrUpdateRanking(selectedCity.id, numericScore);
+      await apiService.addOrUpdateRanking(selectedCity.id, score);
       Alert.alert(
         "Ranking Submitted!",
         `Your score for ${selectedCity.name} has been saved.`,
@@ -225,10 +225,10 @@ export default function AddRankingScreen() {
           {
             text: "OK",
             onPress: () => {
-              setSearchTerm(""); // Reset search term
-              setDebouncedSearchTerm(""); // Reset debounced search term
-              setSelectedCity(null); // Reset selected city
-              setScore(""); // Reset score input
+              setSearchTerm("");
+              setDebouncedSearchTerm("");
+              setSelectedCity(null);
+              setScore(50);
               router.replace("/(tabs)/home");
             },
           },
@@ -251,6 +251,7 @@ export default function AddRankingScreen() {
       ]}
       onPress={() => {
         setSelectedCity(item);
+        setScore(50);
       }}
       activeOpacity={0.7}
     >
@@ -260,6 +261,7 @@ export default function AddRankingScreen() {
     </TouchableOpacity>
   );
 
+  // Conditional rendering for loading state happens AFTER all hooks are called.
   if (isLoadingCities && allCities.length === 0) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -302,11 +304,12 @@ export default function AddRankingScreen() {
               <RankingListFooter
                 selectedCity={selectedCity}
                 score={score}
-                setScore={setScore}
+                onScoreChange={handleScoreChange}
                 isSubmitting={isSubmitting}
                 isLoadingCities={isLoadingCities}
                 submitError={submitError}
                 handleAddOrUpdateRanking={handleAddOrUpdateRanking}
+                cityInitial={cityInitialForSlider}
               />
             }
             ListEmptyComponent={
