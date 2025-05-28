@@ -10,10 +10,11 @@ import {
   StatusBar,
   Platform,
 } from "react-native";
-import { GestureHandlerRootView } from "react-native-gesture-handler"; // Import GestureHandlerRootView
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { DraxProvider } from "react-native-drax";
 
 import { AuthProvider, AuthContext } from "../src/context/AuthContext";
-import { COLORS, TYPOGRAPHY, SPACING } from "../src/theme";
+import { COLORS, TYPOGRAPHY, SPACING } from "../src/theme"; // Ensure this path is correct & theme exports are valid
 
 function InitialLayout() {
   const authContext = useContext(AuthContext);
@@ -40,9 +41,6 @@ function InitialLayout() {
 
   if (authContext?.isLoading) {
     return (
-      // SafeAreaView for loading state should also be inside GestureHandlerRootView
-      // but for simplicity, we'll ensure the main content stack is wrapped.
-      // The loading screen itself doesn't use gestures.
       <SafeAreaView style={styles.safeArea}>
         <StatusBar
           barStyle={Platform.OS === "ios" ? "dark-content" : "dark-content"}
@@ -67,9 +65,11 @@ function InitialLayout() {
 export default function RootAppLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <AuthProvider>
-        <InitialLayout />
-      </AuthProvider>
+      <DraxProvider>
+        <AuthProvider>
+          <InitialLayout />
+        </AuthProvider>
+      </DraxProvider>
     </GestureHandlerRootView>
   );
 }
@@ -77,17 +77,17 @@ export default function RootAppLayout() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.background || "#F9F6F2", // Fallback color
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.background || "#F9F6F2", // Fallback color
   },
   loadingText: {
     marginTop: SPACING.md,
     fontSize: TYPOGRAPHY.sizes.md,
-    color: COLORS.textSecondary,
+    color: COLORS.textSecondary || "#5D4037", // Fallback color
   },
 });

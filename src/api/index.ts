@@ -29,7 +29,7 @@ interface TokenResponse {
   token_type: string;
 }
 
-interface City {
+export interface City {
   // Matches CityDisplay schema from backend
   id: number;
   name: string;

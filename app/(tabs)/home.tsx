@@ -1,5 +1,5 @@
 // app/(tabs)/home.tsx
-import { Ionicons } from "@expo/vector-icons"; // Import Ionicons
+import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useContext, useState } from "react";
 import {

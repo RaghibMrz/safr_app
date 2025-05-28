@@ -1,3 +1,4 @@
+// src/components/ranking/RankingSlider.styles.ts
 import { StyleSheet } from "react-native";
 import { COLORS, TYPOGRAPHY, SPACING, FONT_WEIGHTS } from "../../theme";
 
@@ -6,10 +7,10 @@ export const styles = StyleSheet.create({
     width: "100%",
     paddingVertical: SPACING.lg,
     alignItems: "center",
-    marginBottom: SPACING.xl,
+    marginBottom: SPACING.lg, // Consistent margin
   },
   trackContainer: {
-    width: "90%",
+    width: "90%", // Or '100%' if container has padding
     height: 40,
     justifyContent: "center",
     position: "relative",
@@ -17,14 +18,26 @@ export const styles = StyleSheet.create({
   },
   track: {
     width: "100%",
-    height: 6,
-    backgroundColor: COLORS.border,
-    borderRadius: 3,
+    height: 8,
+    backgroundColor: COLORS.border, // Softer track color
+    borderRadius: 4,
+  },
+  trackHalo: {
+    position: "absolute",
+    left: -SPACING.sm, // Halo extends beyond track
+    right: -SPACING.sm,
+    top: -SPACING.sm,
+    bottom: -SPACING.sm,
+    backgroundColor: COLORS.secondary,
+    opacity: 0.4,
+    borderRadius: SPACING.md, // Softer halo corners
+    borderWidth: 2,
+    borderColor: COLORS.primary,
   },
   labelsContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    width: "90%",
+    width: "90%", // Match trackContainer
     marginTop: SPACING.xs,
   },
   label: {
@@ -34,42 +47,27 @@ export const styles = StyleSheet.create({
   },
   markerContainer: {
     position: "absolute",
-    left: 0,
+    // left: 0, // Positioned by transform
     justifyContent: "center",
     alignItems: "center",
+    // The marker itself will define its size
+    width: SPACING["3xl"], // Hit area for marker if needed, matches visual marker
+    height: SPACING["3xl"],
   },
   marker: {
-    width: SPACING["3xl"],
-    height: SPACING["3xl"],
-    borderRadius: SPACING["3xl"] / 2,
+    width: SPACING.xl + SPACING.xs, // 24px marker
+    height: SPACING.xl + SPACING.xs, // 24px marker
+    borderRadius: (SPACING.xl + SPACING.xs) / 2,
     backgroundColor: COLORS.primary,
-    borderWidth: 3,
+    borderWidth: 2, // Thinner border
     borderColor: COLORS.surface,
-    shadowColor: COLORS.shadow,
+    shadowColor: COLORS.black,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.2, // Softer shadow
     shadowRadius: 3,
-    elevation: 5,
-    justifyContent: "center",
-    alignItems: "center",
+    elevation: 4,
   },
-  markerText: {
-    color: COLORS.textOnPrimary,
-    fontWeight: FONT_WEIGHTS.bold,
-    fontSize: TYPOGRAPHY.sizes.sm,
-  },
-  currentScoreContainer: {
-    marginTop: SPACING.md,
-    padding: SPACING.sm,
-    backgroundColor: COLORS.secondary,
-    borderRadius: SPACING.xs,
-  },
-  currentScoreText: {
-    ...TYPOGRAPHY.bodyMedium,
-    color: COLORS.textPrimary,
-    fontWeight: FONT_WEIGHTS.semiBold,
-    fontSize: TYPOGRAPHY.sizes.lg,
-  },
+  // markerText removed, as DraggableSymbol shows the initial
   instructionText: {
     ...TYPOGRAPHY.bodySmall,
     color: COLORS.textSecondary,

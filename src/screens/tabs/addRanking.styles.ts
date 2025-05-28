@@ -1,8 +1,9 @@
 // src/screens/tabs/addRanking.styles.ts
 import { StyleSheet, Platform, Dimensions } from "react-native";
-import { COLORS, TYPOGRAPHY, SPACING, FONT_WEIGHTS } from "../../theme";
+import { COLORS, TYPOGRAPHY, SPACING, FONT_WEIGHTS } from "../../theme"; // Path to your theme
 
 const screenHeight = Dimensions.get("window").height;
+const screenWidth = Dimensions.get("window").width; // Get screen width for centering
 
 export const styles = StyleSheet.create({
   safeArea: {
@@ -17,17 +18,17 @@ export const styles = StyleSheet.create({
     paddingHorizontal: SPACING.lg,
   },
   // --- Search Input Area ---
-  searchContainer: {
+  searchContainerFromStyles: {
     paddingTop: Platform.OS === "ios" ? SPACING.sm : SPACING.lg,
     marginBottom: SPACING.sm,
-    zIndex: 10, // Ensure search input is above other content if results overlay
+    zIndex: 10,
   },
   searchInput: {
     height: 50,
     backgroundColor: COLORS.surface,
     borderColor: COLORS.border,
     borderWidth: 1,
-    borderRadius: SPACING.md, // More rounded
+    borderRadius: SPACING.md,
     paddingHorizontal: SPACING.md,
     fontSize: TYPOGRAPHY.sizes.md,
     color: COLORS.textPrimary,
@@ -39,27 +40,20 @@ export const styles = StyleSheet.create({
   },
   // --- Search Results List ---
   searchResultsContainer: {
-    // This container will hold the FlatList for search results.
-    // It could be absolutely positioned to overlay content, or conditionally rendered.
-    // For now, let's style it for conditional rendering in the flow.
-    maxHeight: screenHeight * 0.4, // Limit height to 40% of screen
+    maxHeight: screenHeight * 0.35,
     backgroundColor: COLORS.surface,
     borderRadius: SPACING.sm,
     borderColor: COLORS.border,
     borderWidth: 1,
-    marginTop: -SPACING.xs, // Slightly overlap with search input bottom for connected feel
     marginBottom: SPACING.md,
     shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.15,
     shadowRadius: 5,
     elevation: 5,
-    zIndex: 5, // Above other elements but below search input if it has higher zIndex
+    zIndex: 5,
   },
-  cityList: {
-    // Style for the FlatList itself inside searchResultsContainer
-    // No specific background or border needed here if container has it
-  },
+  cityList: {},
   cityPickerItem: {
     paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.lg,
@@ -72,60 +66,74 @@ export const styles = StyleSheet.create({
     color: COLORS.textPrimary,
   },
   cityPickerItemSelected: {
-    // This style might not be used if selection hides the list
     backgroundColor: COLORS.secondary,
   },
-  // --- Selected City Display & Ranking Area ---
-  rankingSection: {
-    flex: 1, // Allow this section to take remaining space
-    paddingTop: SPACING.md,
-  },
-  selectedCityDisplayContainer: {
+  // --- Draggable Symbol Holding Area ---
+  draggableSymbolHoldingArea: {
+    height: 120,
+    width: "100%",
+    justifyContent: "center",
     alignItems: "center",
-    paddingVertical: SPACING.lg,
-    marginBottom: SPACING.md,
-    // backgroundColor: COLORS.surface, // Optional background
-    // borderRadius: SPACING.sm,
+    marginVertical: SPACING.md,
+    // backgroundColor: '#f0f0f0', // For debugging layout
+  },
+  // --- Selected City Display (when symbol is active or for prompt) ---
+  selectedCityInfoContainer: {
+    alignItems: "center",
+    paddingVertical: SPACING.sm,
   },
   selectedCityName: {
     ...TYPOGRAPHY.h3,
-    fontSize: TYPOGRAPHY.sizes.xxl,
+    fontSize: TYPOGRAPHY.sizes.xl,
     color: COLORS.primary,
     fontWeight: FONT_WEIGHTS.bold,
-    marginBottom: SPACING.sm,
+    textAlign: "center",
   },
   selectedCityPrompt: {
-    // "Drag this onto the line below"
     ...TYPOGRAPHY.bodySmall,
     color: COLORS.textSecondary,
-    marginBottom: SPACING.lg,
+    textAlign: "center",
+    marginTop: SPACING.xs,
+    marginBottom: SPACING.md,
   },
-  // RankingSlider will have its own styles from its component file
-  // --- Score Input (Fallback or if RankingSlider is separate) & Submit Button ---
+  // --- Ranking Section (contains RankingSlider and Submit) ---
+  rankingSection: {
+    paddingTop: SPACING.none,
+    alignItems: "center",
+    width: "100%",
+    marginTop: SPACING.sm,
+  },
   scoreAndSubmitContainer: {
-    // Wraps slider and submit button
-    marginTop: SPACING.sm, // Space above the slider if it's not directly in rankingSection
+    width: "100%",
+    alignItems: "center",
   },
   label: {
-    // Re-defined label for score input area
+    // This is the label style definition
     ...TYPOGRAPHY.bodyMedium,
     fontSize: TYPOGRAPHY.sizes.lg,
     color: COLORS.textPrimary,
     fontWeight: FONT_WEIGHTS.semiBold,
-    marginBottom: SPACING.md,
-    marginTop: SPACING.lg,
-    textAlign: "center", // Center the "Set Your Personal Score" label
+    marginBottom: SPACING.sm,
+    marginTop: SPACING.md,
+    textAlign: "center",
   },
-  // Input style for score (if we were using TextInput, RankingSlider handles its own)
-  // input: { ... } // Re-use existing input style if needed elsewhere
+  currentScoreDisplay: {
+    ...TYPOGRAPHY.h2,
+    fontSize: TYPOGRAPHY.sizes.h3,
+    color: COLORS.primary,
+    fontWeight: FONT_WEIGHTS.bold,
+    marginVertical: SPACING.sm,
+    textAlign: "center",
+  },
   buttonPrimary: {
-    width: "100%",
+    width: "90%",
+    alignSelf: "center",
     backgroundColor: COLORS.primary,
     paddingVertical: SPACING.lg,
     borderRadius: SPACING.md,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: SPACING.lg, // More space above button
+    marginTop: SPACING.lg,
     shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.3,
@@ -143,16 +151,19 @@ export const styles = StyleSheet.create({
     shadowOpacity: 0,
     elevation: 0,
   },
-  // --- Utility & Feedback Styles ---
-  loader: {
-    marginVertical: SPACING.xl,
-  },
+  loader: { marginVertical: SPACING.xl },
   centeredLoaderContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     padding: SPACING.xl,
     backgroundColor: COLORS.background,
+  },
+  loadingText: {
+    marginTop: SPACING.md,
+    fontSize: TYPOGRAPHY.sizes.md,
+    color: COLORS.textSecondary,
+    textAlign: "center",
   },
   errorText: {
     ...TYPOGRAPHY.bodySmall,
@@ -162,11 +173,21 @@ export const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   emptyListText: {
-    // For FlatList's ListEmptyComponent
     ...TYPOGRAPHY.bodyRegular,
     textAlign: "center",
     color: COLORS.textMuted,
     padding: SPACING.lg,
     marginTop: SPACING.md,
+  },
+  symbol: {
+    // For size reference in AddRankingScreen.tsx
+    width: SPACING["5xl"] + SPACING.sm,
+    height: SPACING["5xl"] + SPACING.sm,
+  },
+  centeredPromptContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: SPACING.xl,
   },
 });
