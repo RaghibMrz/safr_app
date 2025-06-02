@@ -3,7 +3,6 @@ import { Dimensions, Platform, StyleSheet } from "react-native";
 import { COLORS, FONT_WEIGHTS, SPACING, TYPOGRAPHY } from "../../theme";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
-const RANKING_LINE_HEIGHT = 300;
 const CITY_ICON_SIZE = 60;
 
 export const styles = StyleSheet.create({
@@ -78,7 +77,9 @@ export const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 5,
-    position: "relative",
+    position: "absolute",
+    left: 0,
+    top: 0,
   },
   cityIconText: {
     ...TYPOGRAPHY.bodyMedium,
@@ -102,44 +103,60 @@ export const styles = StyleSheet.create({
     borderRadius: 10,
   },
 
-  // Ranking Container
+  // Ranking Container - Horizontal Line
   rankingContainer: {
-    flex: 1,
-    marginBottom: SPACING.xl,
-  },
-  rankingLine: {
-    height: RANKING_LINE_HEIGHT,
-    width: "100%",
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    marginBottom: SPACING["3xl"],
+    marginTop: SPACING.xl,
   },
-  rankingLineGraphic: {
+  rankingLineWrapper: {
     flex: 1,
-    height: "100%",
-    backgroundColor: COLORS.surface,
-    borderRadius: SPACING.md,
-    borderWidth: 2,
-    borderColor: COLORS.border,
+    height: 80,
     marginHorizontal: SPACING.sm,
     position: "relative",
-    shadowColor: COLORS.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    justifyContent: "center",
+  },
+  rankingLine: {
+    height: 4,
+    backgroundColor: COLORS.primary,
+    borderRadius: 2,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 3,
   },
-  gridLine: {
+  scoreMarker: {
     position: "absolute",
-    left: 0,
-    right: 0,
-    height: 1,
+    alignItems: "center",
+    top: 0,
+    bottom: 0,
+    width: 1,
+  },
+  markerLine: {
+    width: 1,
+    flex: 1,
     backgroundColor: COLORS.divider,
   },
-  rankingLabel: {
+  markerText: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textMuted,
+    marginTop: SPACING.xs,
+  },
+  rankingLabelLeft: {
     ...TYPOGRAPHY.bodyMedium,
     color: COLORS.textSecondary,
     fontWeight: FONT_WEIGHTS.semiBold,
+    width: 25,
+    textAlign: "center",
+  },
+  rankingLabelRight: {
+    ...TYPOGRAPHY.bodyMedium,
+    color: COLORS.textSecondary,
+    fontWeight: FONT_WEIGHTS.semiBold,
+    width: 30,
+    textAlign: "center",
   },
 
   // Submit Button
@@ -166,22 +183,42 @@ export const styles = StyleSheet.create({
   // Modal Styles
   modalOverlay: {
     flex: 1,
+    backgroundColor: "transparent",
+  },
+  modalBackdrop: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "flex-end",
   },
   modalContent: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
     backgroundColor: COLORS.background,
     borderTopLeftRadius: SPACING.xl,
     borderTopRightRadius: SPACING.xl,
     paddingHorizontal: SPACING.lg,
     paddingTop: SPACING.lg,
-    maxHeight: screenHeight * 0.75,
+    paddingBottom: Platform.OS === "ios" ? 34 : SPACING.lg,
+    height: screenHeight * 0.85,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 10,
   },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: SPACING.lg,
+    paddingBottom: SPACING.md,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.divider,
   },
   modalTitle: {
     ...TYPOGRAPHY.h3,
@@ -199,7 +236,7 @@ export const styles = StyleSheet.create({
     marginBottom: SPACING.lg,
   },
   searchResultsList: {
-    maxHeight: screenHeight * 0.5,
+    flex: 1,
   },
   searchResultItem: {
     flexDirection: "row",
@@ -249,7 +286,7 @@ export const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
 
-  // Unused styles from previous version (kept for reference)
+  // Old styles kept for reference
   listHeaderContainer: {
     paddingTop: Platform.OS === "ios" ? SPACING.sm : SPACING.lg,
     marginBottom: SPACING.sm,
@@ -278,73 +315,5 @@ export const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 2,
-  },
-  cityList: {},
-  cityPickerItem: {
-    backgroundColor: COLORS.surface,
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.lg,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: COLORS.divider,
-  },
-  cityPickerItemText: {
-    ...TYPOGRAPHY.bodyRegular,
-    fontSize: TYPOGRAPHY.sizes.md,
-    color: COLORS.textPrimary,
-  },
-  cityPickerItemSelected: {
-    backgroundColor: COLORS.secondary,
-  },
-  listFooterContainer: {
-    paddingTop: SPACING.md,
-  },
-  selectedCityText: {
-    ...TYPOGRAPHY.bodyMedium,
-    fontSize: TYPOGRAPHY.sizes.md,
-    color: COLORS.primary,
-    fontWeight: FONT_WEIGHTS.bold,
-    textAlign: "center",
-    marginVertical: SPACING.lg,
-  },
-  input: {
-    width: "100%",
-    height: 55,
-    backgroundColor: COLORS.surface,
-    borderColor: COLORS.border,
-    borderWidth: 1.5,
-    borderRadius: SPACING.md,
-    paddingHorizontal: SPACING.lg,
-    fontSize: TYPOGRAPHY.sizes.md,
-    color: COLORS.textPrimary,
-    marginBottom: SPACING.xl,
-    shadowColor: COLORS.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  buttonPrimary: {
-    width: "100%",
-    backgroundColor: COLORS.primary,
-    paddingVertical: SPACING.lg,
-    borderRadius: SPACING.md,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: SPACING.sm,
-    marginBottom: SPACING.xl,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  buttonTextPrimary: {
-    ...TYPOGRAPHY.button,
-    color: COLORS.textOnPrimary,
-    fontWeight: FONT_WEIGHTS.bold,
-    fontSize: TYPOGRAPHY.sizes.lg,
-  },
-  loader: {
-    marginVertical: SPACING.xl,
   },
 });

@@ -32,9 +32,9 @@ import { AuthContext } from "../../src/context/AuthContext";
 import { styles } from "../../src/screens/tabs/addRanking.styles";
 import { COLORS, SPACING } from "../../src/theme";
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
-const RANKING_LINE_HEIGHT = 300;
-const RANKING_LINE_WIDTH = screenWidth - SPACING.xl * 2;
+const { width: screenWidth } = Dimensions.get("window");
+const RANKING_LINE_WIDTH = screenWidth - SPACING.xl * 2 - 60; // Account for labels
+const RANKING_LINE_HEIGHT = 60;
 const CITY_ICON_SIZE = 60;
 
 interface City {
@@ -46,6 +46,7 @@ interface City {
 interface DraggableCity extends City {
   score: number;
   color: string;
+  position: { x: number; y: number };
 }
 
 const CITY_COLORS = [
@@ -80,6 +81,13 @@ export default function AddRankingScreen() {
   // Animation values for each city
   const cityPositions = useRef<{ [key: number]: Animated.ValueXY }>({});
   const colorIndex = useRef(0);
+  const rankingLineRef = useRef<View>(null);
+  const [rankingLineLayout, setRankingLineLayout] = useState({
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0,
+  });
 
   if (!authContext) {
     console.error("AuthContext is not available in AddRankingScreen.");
@@ -131,73 +139,103 @@ export default function AddRankingScreen() {
           city.name.toLowerCase().includes(trimmedSearch) ||
           city.country.toLowerCase().includes(trimmedSearch)
       )
-      .slice(0, 50); // Limit results for performance
+      .slice(0, 50);
   }, [allCities, debouncedSearchTerm]);
 
-  const createPanResponder = useCallback((cityId: number) => {
-    return PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
+  const createPanResponder = useCallback(
+    (cityId: number) => {
+      return PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: () => true,
 
-      onPanResponderGrant: () => {
-        setCurrentDraggingId(cityId);
-      },
+        onPanResponderGrant: () => {
+          setCurrentDraggingId(cityId);
+          const city = selectedCities.find((c) => c.id === cityId);
+          if (city && cityPositions.current[cityId]) {
+            cityPositions.current[cityId].setOffset({
+              x: city.position.x,
+              y: city.position.y,
+            });
+            cityPositions.current[cityId].setValue({ x: 0, y: 0 });
+          }
+        },
 
-      onPanResponderMove: (_, gestureState) => {
-        const position = cityPositions.current[cityId];
-        if (position) {
-          position.x.setValue(gestureState.dx);
-          position.y.setValue(gestureState.dy);
-        }
-      },
+        onPanResponderMove: (_, gestureState) => {
+          const position = cityPositions.current[cityId];
+          if (position) {
+            position.setValue({
+              x: gestureState.dx,
+              y: gestureState.dy,
+            });
+          }
+        },
 
-      onPanResponderRelease: (_, gestureState) => {
-        const position = cityPositions.current[cityId];
-        if (!position) return;
+        onPanResponderRelease: (_, gestureState) => {
+          const position = cityPositions.current[cityId];
+          if (!position) return;
 
-        // Calculate if the city was dropped on the ranking line
-        const dropY = gestureState.moveY;
-        const lineTop = screenHeight - RANKING_LINE_HEIGHT - 150;
-        const lineBottom = lineTop + RANKING_LINE_HEIGHT;
+          position.flattenOffset();
 
-        if (dropY >= lineTop && dropY <= lineBottom) {
-          // Calculate score based on position on the line (0 at bottom, 100 at top)
-          const relativeY = dropY - lineTop;
-          const score = Math.round((1 - relativeY / RANKING_LINE_HEIGHT) * 100);
+          // Get absolute position
+          const absoluteY = gestureState.moveY;
 
-          // Update the city's score
-          setSelectedCities((prev) =>
-            prev.map((city) => (city.id === cityId ? { ...city, score } : city))
-          );
+          // Check if Y position is near the ranking line
+          const lineTop = rankingLineLayout.y - CITY_ICON_SIZE / 2;
+          const lineBottom =
+            rankingLineLayout.y + rankingLineLayout.height + CITY_ICON_SIZE / 2;
 
-          // Animate to the correct position on the line
-          const targetX = RANKING_LINE_WIDTH / 2 - CITY_ICON_SIZE / 2;
-          const targetY =
-            RANKING_LINE_HEIGHT -
-            (score / 100) * RANKING_LINE_HEIGHT -
-            CITY_ICON_SIZE / 2;
+          if (absoluteY >= lineTop && absoluteY <= lineBottom) {
+            // Calculate score based on X position
+            const currentX = (position.x as any)._value;
+            const normalizedX = Math.max(
+              0,
+              Math.min(currentX, RANKING_LINE_WIDTH)
+            );
+            const score = Math.round((normalizedX / RANKING_LINE_WIDTH) * 100);
 
-          Animated.spring(position, {
-            toValue: { x: targetX, y: targetY },
-            useNativeDriver: false,
-            friction: 5,
-          }).start();
-        } else {
-          // Spring back to original position
-          Animated.spring(position, {
-            toValue: { x: 0, y: 0 },
-            useNativeDriver: false,
-          }).start();
-        }
+            // Snap to line Y position
+            const snapY =
+              rankingLineLayout.y +
+              rankingLineLayout.height / 2 -
+              CITY_ICON_SIZE / 2 -
+              100; // Adjust for city spawn area
 
-        setCurrentDraggingId(null);
-      },
-    });
-  }, []);
+            // Update city data
+            setSelectedCities((prev) =>
+              prev.map((city) =>
+                city.id === cityId
+                  ? { ...city, score, position: { x: normalizedX, y: snapY } }
+                  : city
+              )
+            );
+
+            // Animate to position
+            Animated.spring(position, {
+              toValue: { x: normalizedX, y: snapY },
+              useNativeDriver: false,
+              friction: 5,
+            }).start();
+          } else {
+            // Return to previous position
+            const city = selectedCities.find((c) => c.id === cityId);
+            const targetX = city?.position.x || 0;
+            const targetY = city?.position.y || 0;
+
+            Animated.spring(position, {
+              toValue: { x: targetX, y: targetY },
+              useNativeDriver: false,
+            }).start();
+          }
+
+          setCurrentDraggingId(null);
+        },
+      });
+    },
+    [selectedCities, rankingLineLayout]
+  );
 
   const handleSelectCity = useCallback(
     (city: City) => {
-      // Check if city is already selected
       if (selectedCities.find((c) => c.id === city.id)) {
         Alert.alert(
           "Already Selected",
@@ -206,14 +244,13 @@ export default function AddRankingScreen() {
         return;
       }
 
-      // Create animated position for this city
       cityPositions.current[city.id] = new Animated.ValueXY({ x: 0, y: 0 });
 
-      // Add city with initial properties
       const newCity: DraggableCity = {
         ...city,
-        score: 50, // Default score
+        score: 0,
         color: CITY_COLORS[colorIndex.current % CITY_COLORS.length],
+        position: { x: 0, y: 0 },
       };
 
       colorIndex.current += 1;
@@ -256,7 +293,6 @@ export default function AddRankingScreen() {
 
     setIsSubmitting(true);
     try {
-      // Submit all rankings
       await Promise.all(
         citiesWithScores.map((city) =>
           apiService.addOrUpdateRanking(city.id, city.score)
@@ -367,8 +403,9 @@ export default function AddRankingScreen() {
                                 { translateY: position.y },
                               ]
                             : [],
-                          zIndex: isDragging ? 1000 : 1,
+                          zIndex: isDragging ? 1000 : city.score > 0 ? 10 : 1,
                           opacity: isDragging ? 0.8 : 1,
+                          elevation: isDragging ? 10 : 5,
                         },
                       ]}
                       {...panResponder.panHandlers}
@@ -382,6 +419,7 @@ export default function AddRankingScreen() {
                       <TouchableOpacity
                         style={styles.removeCityButton}
                         onPress={() => handleRemoveCity(city.id)}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                       >
                         <Ionicons
                           name="close-circle"
@@ -398,19 +436,33 @@ export default function AddRankingScreen() {
 
           {/* Ranking Line */}
           <View style={styles.rankingContainer}>
-            <View style={styles.rankingLine}>
-              <Text style={styles.rankingLabel}>100</Text>
-              <View style={styles.rankingLineGraphic}>
-                {/* Grid lines */}
-                {[0, 25, 50, 75, 100].map((value) => (
-                  <View
-                    key={value}
-                    style={[styles.gridLine, { bottom: `${value}%` }]}
-                  />
-                ))}
-              </View>
-              <Text style={styles.rankingLabel}>0</Text>
+            <Text style={styles.rankingLabelLeft}>0</Text>
+            <View
+              ref={rankingLineRef}
+              style={styles.rankingLineWrapper}
+              onLayout={(event) => {
+                const layout = event.nativeEvent.layout;
+                // Measure relative to the window
+                rankingLineRef.current?.measureInWindow(
+                  (x, y, width, height) => {
+                    setRankingLineLayout({ x, y, width, height });
+                  }
+                );
+              }}
+            >
+              <View style={styles.rankingLine} />
+              {/* Score markers */}
+              {[0, 25, 50, 75, 100].map((value) => (
+                <View
+                  key={value}
+                  style={[styles.scoreMarker, { left: `${value}%` }]}
+                >
+                  <View style={styles.markerLine} />
+                  <Text style={styles.markerText}>{value}</Text>
+                </View>
+              ))}
             </View>
+            <Text style={styles.rankingLabelRight}>100</Text>
           </View>
 
           {/* Submit Button */}
@@ -442,6 +494,15 @@ export default function AddRankingScreen() {
         onRequestClose={() => setShowSearchModal(false)}
       >
         <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => {
+              setShowSearchModal(false);
+              setSearchTerm("");
+              setDebouncedSearchTerm("");
+            }}
+          />
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Search Cities</Text>
@@ -451,6 +512,7 @@ export default function AddRankingScreen() {
                   setSearchTerm("");
                   setDebouncedSearchTerm("");
                 }}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
                 <Ionicons name="close" size={24} color={COLORS.textPrimary} />
               </TouchableOpacity>
@@ -473,6 +535,7 @@ export default function AddRankingScreen() {
               keyExtractor={(item) => item.id.toString()}
               style={styles.searchResultsList}
               showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
               ListEmptyComponent={
                 searchTerm.trim() && !isLoadingCities ? (
                   <Text style={styles.noResultsText}>
