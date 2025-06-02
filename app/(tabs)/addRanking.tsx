@@ -299,8 +299,9 @@ export default function AddRankingScreen() {
         return;
       }
 
-      // Calculate initial position based on current city count
-      const index = selectedCities.length;
+      // Calculate initial position based on unranked cities only
+      const unrankedCities = selectedCities.filter((c) => c.score === 0);
+      const index = unrankedCities.length;
       const row = Math.floor(index / ICONS_PER_ROW);
       const col = index % ICONS_PER_ROW;
       const initialX = col * (CITY_ICON_SIZE + INITIAL_SPACING);
@@ -333,15 +334,21 @@ export default function AddRankingScreen() {
     setSelectedCities((prev) => {
       const filtered = prev.filter((c) => c.id !== cityId);
 
-      // Recalculate positions for remaining cities to fill gaps
-      return filtered.map((city, index) => {
-        const row = Math.floor(index / ICONS_PER_ROW);
-        const col = index % ICONS_PER_ROW;
-        const newX = col * (CITY_ICON_SIZE + INITIAL_SPACING);
-        const newY = row * (CITY_ICON_SIZE + INITIAL_SPACING);
+      // Get only unranked cities for repositioning
+      const unrankedCities = filtered.filter((c) => c.score === 0);
 
-        // Only update position if city hasn't been placed on the ranking line
+      // Update positions for all cities
+      return filtered.map((city) => {
         if (city.score === 0) {
+          // Find this city's index among unranked cities
+          const unrankedIndex = unrankedCities.findIndex(
+            (c) => c.id === city.id
+          );
+          const row = Math.floor(unrankedIndex / ICONS_PER_ROW);
+          const col = unrankedIndex % ICONS_PER_ROW;
+          const newX = col * (CITY_ICON_SIZE + INITIAL_SPACING);
+          const newY = row * (CITY_ICON_SIZE + INITIAL_SPACING);
+
           cityPositions.current[city.id]?.setValue({ x: newX, y: newY });
           return { ...city, position: { x: newX, y: newY } };
         }
