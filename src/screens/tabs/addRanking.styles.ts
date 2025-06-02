@@ -69,9 +69,9 @@ export const styles = StyleSheet.create({
     marginBottom: SPACING.xl,
   },
   cityIconsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: SPACING.md,
+    position: "relative",
+    minHeight: CITY_ICON_SIZE * 2, // Allow for at least 2 rows
+    // Removed flex properties as they don't work with absolute positioned children
   },
   cityIcon: {
     width: CITY_ICON_SIZE,

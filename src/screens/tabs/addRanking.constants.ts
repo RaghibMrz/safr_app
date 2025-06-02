@@ -32,6 +32,10 @@ export const REMOVE_BUTTON_OFFSET = {
 
 export const LINE_Y_OFFSET = 170; // Adjust for city spawn area
 
+// Initial city grid layout
+export const INITIAL_SPACING = SPACING.md;
+export const ICONS_PER_ROW = 5;
+
 // Colors for cities
 export const CITY_COLORS = [
   "#FF6B6B",

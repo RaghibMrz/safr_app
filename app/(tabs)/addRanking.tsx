@@ -47,6 +47,10 @@ import { COLORS, SPACING } from "../../src/theme";
 
 const { height: screenHeight } = Dimensions.get("window");
 
+// Layout constants for initial city positioning
+const INITIAL_SPACING = SPACING.md;
+const ICONS_PER_ROW = 5;
+
 interface City {
   id: number;
   name: string;
@@ -295,13 +299,23 @@ export default function AddRankingScreen() {
         return;
       }
 
-      cityPositions.current[city.id] = new Animated.ValueXY({ x: 0, y: 0 });
+      // Calculate initial position based on current city count
+      const index = selectedCities.length;
+      const row = Math.floor(index / ICONS_PER_ROW);
+      const col = index % ICONS_PER_ROW;
+      const initialX = col * (CITY_ICON_SIZE + INITIAL_SPACING);
+      const initialY = row * (CITY_ICON_SIZE + INITIAL_SPACING);
+
+      cityPositions.current[city.id] = new Animated.ValueXY({
+        x: initialX,
+        y: initialY,
+      });
 
       const newCity: DraggableCityData = {
         ...city,
         score: 0,
         color: CITY_COLORS[colorIndex.current % CITY_COLORS.length],
-        position: { x: 0, y: 0 },
+        position: { x: initialX, y: initialY },
       };
 
       colorIndex.current += 1;
@@ -316,7 +330,24 @@ export default function AddRankingScreen() {
   // Handle city removal (no confirmation)
   const handleRemoveCity = useCallback((cityId: number) => {
     delete cityPositions.current[cityId];
-    setSelectedCities((prev) => prev.filter((c) => c.id !== cityId));
+    setSelectedCities((prev) => {
+      const filtered = prev.filter((c) => c.id !== cityId);
+
+      // Recalculate positions for remaining cities to fill gaps
+      return filtered.map((city, index) => {
+        const row = Math.floor(index / ICONS_PER_ROW);
+        const col = index % ICONS_PER_ROW;
+        const newX = col * (CITY_ICON_SIZE + INITIAL_SPACING);
+        const newY = row * (CITY_ICON_SIZE + INITIAL_SPACING);
+
+        // Only update position if city hasn't been placed on the ranking line
+        if (city.score === 0) {
+          cityPositions.current[city.id]?.setValue({ x: newX, y: newY });
+          return { ...city, position: { x: newX, y: newY } };
+        }
+        return city;
+      });
+    });
   }, []);
 
   // Handle ranking submission
