@@ -1,31 +1,41 @@
 // app/(tabs)/addRanking.tsx
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import React, {
-  useState,
+  useCallback,
   useContext,
   useEffect,
-  useCallback,
   useMemo,
+  useRef,
+  useState,
 } from "react";
 import {
-  View,
-  Text,
-  TouchableOpacity,
   ActivityIndicator,
-  FlatList,
   Alert,
+  Animated,
+  Dimensions,
+  FlatList,
+  KeyboardAvoidingView,
+  Modal,
+  PanResponder,
+  Platform,
   SafeAreaView,
   StatusBar,
-  Platform,
-  KeyboardAvoidingView,
+  Text,
   TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { useRouter } from "expo-router";
 
-import { AuthContext } from "../../src/context/AuthContext";
 import apiService from "../../src/api";
-import { COLORS, TYPOGRAPHY, SPACING } from "../../src/theme";
+import { AuthContext } from "../../src/context/AuthContext";
 import { styles } from "../../src/screens/tabs/addRanking.styles";
-import { RankingSlider } from "../../src/components/ranking/RankingSlider";
+import { COLORS, SPACING } from "../../src/theme";
+
+const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
+const RANKING_LINE_HEIGHT = 300;
+const RANKING_LINE_WIDTH = screenWidth - SPACING.xl * 2;
+const CITY_ICON_SIZE = 60;
 
 interface City {
   id: number;
@@ -33,120 +43,60 @@ interface City {
   country: string;
 }
 
-interface RankingListHeaderProps {
-  searchTerm: string;
-  setSearchTerm: (text: string) => void;
-  fetchError: string;
-  isSubmitting: boolean;
-}
-
-const RankingListHeader: React.FC<RankingListHeaderProps> = React.memo(
-  ({ searchTerm, setSearchTerm, fetchError, isSubmitting }) => {
-    return (
-      <View style={styles.listHeaderContainer}>
-        {fetchError && <Text style={styles.errorText}>{fetchError}</Text>}
-        <Text style={styles.label}>Search and Select a City</Text>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Type to search cities..."
-          placeholderTextColor={COLORS.placeholder}
-          value={searchTerm}
-          onChangeText={setSearchTerm}
-          autoCapitalize="words"
-          returnKeyType="search"
-          autoCorrect={false}
-          spellCheck={false}
-          editable={!isSubmitting}
-        />
-      </View>
-    );
-  }
-);
-
-interface RankingListFooterProps {
-  selectedCity: City | null;
+interface DraggableCity extends City {
   score: number;
-  onScoreChange: (newScore: number) => void;
-  isSubmitting: boolean;
-  isLoadingCities: boolean;
-  submitError: string;
-  handleAddOrUpdateRanking: () => Promise<void>;
-  cityInitial?: string;
+  color: string;
 }
 
-const RankingListFooter: React.FC<RankingListFooterProps> = React.memo(
-  ({
-    selectedCity,
-    score,
-    onScoreChange,
-    isSubmitting,
-    isLoadingCities,
-    submitError,
-    handleAddOrUpdateRanking,
-    cityInitial,
-  }) => {
-    return (
-      <View style={styles.listFooterContainer}>
-        {selectedCity && (
-          <Text style={styles.selectedCityText}>
-            Selected: {selectedCity.name}, {selectedCity.country}
-          </Text>
-        )}
-        <Text style={styles.label}>Set Your Personal Score (0-100)</Text>
-
-        <RankingSlider
-          initialScore={score}
-          onScoreChange={onScoreChange}
-          cityInitial={cityInitial}
-          disabled={!selectedCity || isSubmitting}
-        />
-
-        {isSubmitting ? (
-          <ActivityIndicator
-            size="large"
-            color={COLORS.primary}
-            style={styles.loader}
-          />
-        ) : (
-          <TouchableOpacity
-            style={[
-              styles.buttonPrimary,
-              !selectedCity && styles.buttonDisabled,
-            ]}
-            onPress={handleAddOrUpdateRanking}
-            disabled={!selectedCity || isLoadingCities || isSubmitting}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.buttonTextPrimary}>Submit Ranking</Text>
-          </TouchableOpacity>
-        )}
-        {submitError && <Text style={styles.errorText}>{submitError}</Text>}
-      </View>
-    );
-  }
-);
+const CITY_COLORS = [
+  "#FF6B6B",
+  "#4ECDC4",
+  "#45B7D1",
+  "#96CEB4",
+  "#FECA57",
+  "#FF9FF3",
+  "#54A0FF",
+  "#48DBFB",
+  "#1DD1A1",
+  "#FFA502",
+];
 
 export default function AddRankingScreen() {
   const authContext = useContext(AuthContext);
   const router = useRouter();
 
-  // All useState, useCallback, useEffect, useMemo hooks MUST be called here,
-  // before any conditional returns.
   const [allCities, setAllCities] = useState<City[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>("");
-  const [selectedCity, setSelectedCity] = useState<City | null>(null);
-  const [score, setScore] = useState<number>(50);
+  const [selectedCities, setSelectedCities] = useState<DraggableCity[]>([]);
   const [isLoadingCities, setIsLoadingCities] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fetchError, setFetchError] = useState("");
-  const [submitError, setSubmitError] = useState("");
+  const [showSearchModal, setShowSearchModal] = useState(false);
+  const [currentDraggingId, setCurrentDraggingId] = useState<number | null>(
+    null
+  );
+
+  // Animation values for each city
+  const cityPositions = useRef<{ [key: number]: Animated.ValueXY }>({});
+  const colorIndex = useRef(0);
+
+  if (!authContext) {
+    console.error("AuthContext is not available in AddRankingScreen.");
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.centeredLoaderContainer}>
+          <Text style={{ color: COLORS.error }}>Service unavailable.</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const fetchCities = useCallback(async () => {
     setIsLoadingCities(true);
     setFetchError("");
     try {
-      const cityData = await apiService.getCities(0, 500);
+      const cityData = await apiService.getCities(0, 15000);
       setAllCities(cityData);
     } catch (e: any) {
       setFetchError(e.message || "Failed to load cities. Please try again.");
@@ -175,93 +125,179 @@ export default function AddRankingScreen() {
     if (!trimmedSearch) {
       return [];
     }
-    return allCities.filter(
-      (city) =>
-        city.name.toLowerCase().includes(trimmedSearch) ||
-        city.country.toLowerCase().includes(trimmedSearch)
-    );
+    return allCities
+      .filter(
+        (city) =>
+          city.name.toLowerCase().includes(trimmedSearch) ||
+          city.country.toLowerCase().includes(trimmedSearch)
+      )
+      .slice(0, 50); // Limit results for performance
   }, [allCities, debouncedSearchTerm]);
 
-  const handleScoreChange = useCallback((newScore: number) => {
-    setScore(newScore);
+  const createPanResponder = useCallback((cityId: number) => {
+    return PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+
+      onPanResponderGrant: () => {
+        setCurrentDraggingId(cityId);
+      },
+
+      onPanResponderMove: (_, gestureState) => {
+        const position = cityPositions.current[cityId];
+        if (position) {
+          position.x.setValue(gestureState.dx);
+          position.y.setValue(gestureState.dy);
+        }
+      },
+
+      onPanResponderRelease: (_, gestureState) => {
+        const position = cityPositions.current[cityId];
+        if (!position) return;
+
+        // Calculate if the city was dropped on the ranking line
+        const dropY = gestureState.moveY;
+        const lineTop = screenHeight - RANKING_LINE_HEIGHT - 150;
+        const lineBottom = lineTop + RANKING_LINE_HEIGHT;
+
+        if (dropY >= lineTop && dropY <= lineBottom) {
+          // Calculate score based on position on the line (0 at bottom, 100 at top)
+          const relativeY = dropY - lineTop;
+          const score = Math.round((1 - relativeY / RANKING_LINE_HEIGHT) * 100);
+
+          // Update the city's score
+          setSelectedCities((prev) =>
+            prev.map((city) => (city.id === cityId ? { ...city, score } : city))
+          );
+
+          // Animate to the correct position on the line
+          const targetX = RANKING_LINE_WIDTH / 2 - CITY_ICON_SIZE / 2;
+          const targetY =
+            RANKING_LINE_HEIGHT -
+            (score / 100) * RANKING_LINE_HEIGHT -
+            CITY_ICON_SIZE / 2;
+
+          Animated.spring(position, {
+            toValue: { x: targetX, y: targetY },
+            useNativeDriver: false,
+            friction: 5,
+          }).start();
+        } else {
+          // Spring back to original position
+          Animated.spring(position, {
+            toValue: { x: 0, y: 0 },
+            useNativeDriver: false,
+          }).start();
+        }
+
+        setCurrentDraggingId(null);
+      },
+    });
   }, []);
 
-  const cityInitialForSlider = useMemo(() => {
-    // Moved this hook up
-    return selectedCity ? selectedCity.name.charAt(0).toUpperCase() : undefined;
-  }, [selectedCity]);
+  const handleSelectCity = useCallback(
+    (city: City) => {
+      // Check if city is already selected
+      if (selectedCities.find((c) => c.id === city.id)) {
+        Alert.alert(
+          "Already Selected",
+          `${city.name} is already in your ranking list.`
+        );
+        return;
+      }
 
-  // AuthContext check - if context is truly unavailable, it's a critical setup error.
-  // This early return is for a catastrophic failure, not typical conditional rendering.
-  if (!authContext) {
-    console.error("AuthContext is not available in AddRankingScreen.");
-    return (
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.centeredLoaderContainer}>
-          <Text style={{ color: COLORS.error }}>Service unavailable.</Text>
-        </View>
-      </SafeAreaView>
+      // Create animated position for this city
+      cityPositions.current[city.id] = new Animated.ValueXY({ x: 0, y: 0 });
+
+      // Add city with initial properties
+      const newCity: DraggableCity = {
+        ...city,
+        score: 50, // Default score
+        color: CITY_COLORS[colorIndex.current % CITY_COLORS.length],
+      };
+
+      colorIndex.current += 1;
+      setSelectedCities((prev) => [...prev, newCity]);
+      setShowSearchModal(false);
+      setSearchTerm("");
+      setDebouncedSearchTerm("");
+    },
+    [selectedCities]
+  );
+
+  const handleRemoveCity = useCallback((cityId: number) => {
+    Alert.alert(
+      "Remove City",
+      "Are you sure you want to remove this city from your ranking?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Remove",
+          style: "destructive",
+          onPress: () => {
+            delete cityPositions.current[cityId];
+            setSelectedCities((prev) => prev.filter((c) => c.id !== cityId));
+          },
+        },
+      ]
     );
-  }
+  }, []);
 
-  const handleAddOrUpdateRanking = async () => {
-    if (!selectedCity) {
-      setSubmitError("Please select a city from the search results to rank.");
-      return;
-    }
-    if (score < 0 || score > 100) {
-      setSubmitError("Score must be between 0 and 100.");
+  const handleSubmitRankings = async () => {
+    const citiesWithScores = selectedCities.filter((city) => city.score > 0);
+
+    if (citiesWithScores.length === 0) {
+      Alert.alert(
+        "No Rankings",
+        "Please add and rank at least one city before submitting."
+      );
       return;
     }
 
     setIsSubmitting(true);
-    setSubmitError("");
     try {
-      await apiService.addOrUpdateRanking(selectedCity.id, score);
+      // Submit all rankings
+      await Promise.all(
+        citiesWithScores.map((city) =>
+          apiService.addOrUpdateRanking(city.id, city.score)
+        )
+      );
+
       Alert.alert(
-        "Ranking Submitted!",
-        `Your score for ${selectedCity.name} has been saved.`,
+        "Rankings Submitted!",
+        `Successfully saved rankings for ${citiesWithScores.length} cities.`,
         [
           {
             text: "OK",
             onPress: () => {
-              setSearchTerm("");
-              setDebouncedSearchTerm("");
-              setSelectedCity(null);
-              setScore(50);
               router.replace("/(tabs)/home");
             },
           },
         ]
       );
     } catch (e: any) {
-      setSubmitError(
-        e.message || "Failed to submit ranking. Please try again."
+      Alert.alert(
+        "Error",
+        e.message || "Failed to submit rankings. Please try again."
       );
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const renderCityPickerItem = ({ item }: { item: City }) => (
+  const renderSearchResult = ({ item }: { item: City }) => (
     <TouchableOpacity
-      style={[
-        styles.cityPickerItem,
-        selectedCity?.id === item.id && styles.cityPickerItemSelected,
-      ]}
-      onPress={() => {
-        setSelectedCity(item);
-        setScore(50);
-      }}
+      style={styles.searchResultItem}
+      onPress={() => handleSelectCity(item)}
       activeOpacity={0.7}
     >
-      <Text style={styles.cityPickerItemText}>
+      <Text style={styles.searchResultText}>
         {item.name}, {item.country}
       </Text>
+      <Ionicons name="add-circle-outline" size={24} color={COLORS.primary} />
     </TouchableOpacity>
   );
 
-  // Conditional rendering for loading state happens AFTER all hooks are called.
   if (isLoadingCities && allCities.length === 0) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -281,61 +317,173 @@ export default function AddRankingScreen() {
         barStyle={Platform.OS === "ios" ? "dark-content" : "dark-content"}
         backgroundColor={COLORS.background}
       />
+
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardAvoidingContainer}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 0}
       >
         <View style={styles.screenContainer}>
-          <FlatList
-            data={displayedCities}
-            renderItem={renderCityPickerItem}
-            keyExtractor={(item) => item.id.toString()}
-            style={styles.cityList}
-            ListHeaderComponent={
-              <RankingListHeader
-                searchTerm={searchTerm}
-                setSearchTerm={setSearchTerm}
-                fetchError={fetchError}
-                isSubmitting={isSubmitting}
-              />
-            }
-            ListFooterComponent={
-              <RankingListFooter
-                selectedCity={selectedCity}
-                score={score}
-                onScoreChange={handleScoreChange}
-                isSubmitting={isSubmitting}
-                isLoadingCities={isLoadingCities}
-                submitError={submitError}
-                handleAddOrUpdateRanking={handleAddOrUpdateRanking}
-                cityInitial={cityInitialForSlider}
-              />
-            }
-            ListEmptyComponent={
-              !isLoadingCities && debouncedSearchTerm.trim() ? (
-                <View style={{ padding: SPACING.xl }}>
-                  <Text style={styles.emptyText}>
-                    No cities match "{debouncedSearchTerm}".
-                  </Text>
-                </View>
-              ) : !isLoadingCities && !debouncedSearchTerm.trim() ? (
-                <View style={{ padding: SPACING.xl }}>
-                  <Text style={styles.emptyText}>
-                    Start typing to search for a city.
-                  </Text>
-                  {fetchError && (
-                    <Text style={styles.errorText}>{fetchError}</Text>
-                  )}
-                </View>
-              ) : null
-            }
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: SPACING.xl }}
-            keyboardShouldPersistTaps="handled"
-          />
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>Rank Your Cities</Text>
+            <Text style={styles.headerSubtitle}>
+              Search for cities and drag them onto the ranking line
+            </Text>
+          </View>
+
+          {/* Search Button */}
+          <TouchableOpacity
+            style={styles.searchButton}
+            onPress={() => setShowSearchModal(true)}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="search" size={20} color={COLORS.textSecondary} />
+            <Text style={styles.searchButtonText}>Search for a city...</Text>
+          </TouchableOpacity>
+
+          {/* Selected Cities */}
+          <View style={styles.selectedCitiesContainer}>
+            {selectedCities.length === 0 ? (
+              <Text style={styles.emptyText}>
+                No cities selected yet. Tap the search bar above to add cities.
+              </Text>
+            ) : (
+              <View style={styles.cityIconsContainer}>
+                {selectedCities.map((city) => {
+                  const panResponder = createPanResponder(city.id);
+                  const position = cityPositions.current[city.id];
+                  const isDragging = currentDraggingId === city.id;
+
+                  return (
+                    <Animated.View
+                      key={city.id}
+                      style={[
+                        styles.cityIcon,
+                        {
+                          backgroundColor: city.color,
+                          transform: position
+                            ? [
+                                { translateX: position.x },
+                                { translateY: position.y },
+                              ]
+                            : [],
+                          zIndex: isDragging ? 1000 : 1,
+                          opacity: isDragging ? 0.8 : 1,
+                        },
+                      ]}
+                      {...panResponder.panHandlers}
+                    >
+                      <Text style={styles.cityIconText} numberOfLines={1}>
+                        {city.name.substring(0, 3).toUpperCase()}
+                      </Text>
+                      {city.score > 0 && (
+                        <Text style={styles.cityScoreText}>{city.score}</Text>
+                      )}
+                      <TouchableOpacity
+                        style={styles.removeCityButton}
+                        onPress={() => handleRemoveCity(city.id)}
+                      >
+                        <Ionicons
+                          name="close-circle"
+                          size={20}
+                          color={COLORS.white}
+                        />
+                      </TouchableOpacity>
+                    </Animated.View>
+                  );
+                })}
+              </View>
+            )}
+          </View>
+
+          {/* Ranking Line */}
+          <View style={styles.rankingContainer}>
+            <View style={styles.rankingLine}>
+              <Text style={styles.rankingLabel}>100</Text>
+              <View style={styles.rankingLineGraphic}>
+                {/* Grid lines */}
+                {[0, 25, 50, 75, 100].map((value) => (
+                  <View
+                    key={value}
+                    style={[styles.gridLine, { bottom: `${value}%` }]}
+                  />
+                ))}
+              </View>
+              <Text style={styles.rankingLabel}>0</Text>
+            </View>
+          </View>
+
+          {/* Submit Button */}
+          {selectedCities.length > 0 && (
+            <TouchableOpacity
+              style={[
+                styles.submitButton,
+                isSubmitting && styles.buttonDisabled,
+              ]}
+              onPress={handleSubmitRankings}
+              disabled={isSubmitting}
+              activeOpacity={0.8}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator size="small" color={COLORS.white} />
+              ) : (
+                <Text style={styles.submitButtonText}>Submit Rankings</Text>
+              )}
+            </TouchableOpacity>
+          )}
         </View>
       </KeyboardAvoidingView>
+
+      {/* Search Modal */}
+      <Modal
+        visible={showSearchModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowSearchModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Search Cities</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowSearchModal(false);
+                  setSearchTerm("");
+                  setDebouncedSearchTerm("");
+                }}
+              >
+                <Ionicons name="close" size={24} color={COLORS.textPrimary} />
+              </TouchableOpacity>
+            </View>
+
+            <TextInput
+              style={styles.modalSearchInput}
+              placeholder="Type city name..."
+              placeholderTextColor={COLORS.placeholder}
+              value={searchTerm}
+              onChangeText={setSearchTerm}
+              autoFocus
+              autoCapitalize="words"
+              returnKeyType="search"
+            />
+
+            <FlatList
+              data={displayedCities}
+              renderItem={renderSearchResult}
+              keyExtractor={(item) => item.id.toString()}
+              style={styles.searchResultsList}
+              showsVerticalScrollIndicator={false}
+              ListEmptyComponent={
+                searchTerm.trim() && !isLoadingCities ? (
+                  <Text style={styles.noResultsText}>
+                    No cities found matching "{searchTerm}"
+                  </Text>
+                ) : null
+              }
+            />
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
