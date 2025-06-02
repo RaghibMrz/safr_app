@@ -25,6 +25,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Easing,
 } from "react-native";
 
 import apiService from "../../src/api";
@@ -32,7 +33,7 @@ import { AuthContext } from "../../src/context/AuthContext";
 import { CITY_COLORS, styles } from "../../src/screens/tabs/addRanking.styles";
 import { COLORS, SPACING } from "../../src/theme";
 
-const { width: screenWidth } = Dimensions.get("window");
+const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 const RANKING_LINE_WIDTH = screenWidth - SPACING.xl * 2 - 60; // Account for labels
 const CITY_ICON_SIZE = 80;
 
@@ -51,6 +52,10 @@ interface DraggableCity extends City {
 export default function AddRankingScreen() {
   const authContext = useContext(AuthContext);
   const router = useRouter();
+
+  const searchInputRef = useRef<TextInput>(null);
+  const modalOpacity = useRef(new Animated.Value(0)).current;
+  const modalTranslateY = useRef(new Animated.Value(screenHeight)).current; // Start off-screen
 
   const [allCities, setAllCities] = useState<City[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -113,6 +118,46 @@ export default function AddRankingScreen() {
       clearTimeout(handler);
     };
   }, [searchTerm]);
+  useEffect(() => {
+    if (showSearchModal) {
+      Animated.parallel([
+        Animated.timing(modalOpacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(modalTranslateY, {
+          toValue: 0,
+          duration: 300,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(modalOpacity, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(modalTranslateY, {
+          toValue: screenHeight,
+          duration: 200,
+          easing: Easing.in(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [showSearchModal]);
+  useEffect(() => {
+    if (showSearchModal) {
+      const timer = setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 50);
+
+      return () => clearTimeout(timer);
+    }
+  }, [showSearchModal]);
 
   const displayedCities = useMemo(() => {
     const trimmedSearch = debouncedSearchTerm.trim().toLowerCase();
@@ -352,7 +397,7 @@ export default function AddRankingScreen() {
           <View style={styles.header}>
             <Text style={styles.headerTitle}>Rank Your Cities</Text>
             <Text style={styles.headerSubtitle}>
-              Search for cities and drag them onto the ranking line
+              Search for cities and drag them onto the line
             </Text>
           </View>
 
@@ -505,13 +550,25 @@ export default function AddRankingScreen() {
       {/* Search Modal */}
       <Modal
         visible={showSearchModal}
-        animationType="slide"
+        animationType="none" // Important: Disable default modal animation
         transparent={true}
         onRequestClose={() => setShowSearchModal(false)}
       >
-        <View style={styles.modalOverlay}>
+        <Animated.View // Apply backdrop animation here
+          style={[
+            styles.modalBackdrop,
+            { opacity: modalOpacity }, // Animated opacity
+          ]}
+        >
+          {/* The TouchableOpacity covers the entire backdrop to dismiss the modal */}
           <TouchableOpacity
-            style={styles.modalBackdrop}
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              top: 0,
+              bottom: 0,
+            }}
             activeOpacity={1}
             onPress={() => {
               setShowSearchModal(false);
@@ -519,49 +576,56 @@ export default function AddRankingScreen() {
               setDebouncedSearchTerm("");
             }}
           />
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Search Cities</Text>
-              <TouchableOpacity
-                onPress={() => {
-                  setShowSearchModal(false);
-                  setSearchTerm("");
-                  setDebouncedSearchTerm("");
-                }}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Ionicons name="close" size={24} color={COLORS.textPrimary} />
-              </TouchableOpacity>
-            </View>
+        </Animated.View>
 
-            <TextInput
-              style={styles.modalSearchInput}
-              placeholder="Type city name..."
-              placeholderTextColor={COLORS.placeholder}
-              value={searchTerm}
-              onChangeText={setSearchTerm}
-              autoFocus
-              autoCapitalize="words"
-              returnKeyType="search"
-            />
-
-            <FlatList
-              data={displayedCities}
-              renderItem={renderSearchResult}
-              keyExtractor={(item) => item.id.toString()}
-              style={styles.searchResultsList}
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-              ListEmptyComponent={
-                searchTerm.trim() && !isLoadingCities ? (
-                  <Text style={styles.noResultsText}>
-                    No cities found matching "{searchTerm}"
-                  </Text>
-                ) : null
-              }
-            />
+        <Animated.View // Apply slide animation here
+          style={[
+            styles.modalContent,
+            { transform: [{ translateY: modalTranslateY }] }, // Animated translateY
+          ]}
+        >
+          {/* The rest of your existing modal content goes here */}
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Search Cities</Text>
+            <TouchableOpacity
+              onPress={() => {
+                setShowSearchModal(false);
+                setSearchTerm("");
+                setDebouncedSearchTerm("");
+              }}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons name="close" size={24} color={COLORS.textPrimary} />
+            </TouchableOpacity>
           </View>
-        </View>
+
+          <TextInput
+            ref={searchInputRef}
+            style={styles.modalSearchInput}
+            placeholder="Type city name..."
+            placeholderTextColor={COLORS.placeholder}
+            value={searchTerm}
+            onChangeText={setSearchTerm}
+            autoCapitalize="words"
+            returnKeyType="search"
+          />
+
+          <FlatList
+            data={displayedCities}
+            renderItem={renderSearchResult}
+            keyExtractor={(item) => item.id.toString()}
+            style={styles.searchResultsList}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            ListEmptyComponent={
+              searchTerm.trim() && !isLoadingCities ? (
+                <Text style={styles.noResultsText}>
+                  No cities found matching "{searchTerm}"
+                </Text>
+              ) : null
+            }
+          />
+        </Animated.View>
       </Modal>
     </SafeAreaView>
   );
