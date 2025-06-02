@@ -15,6 +15,7 @@ export const styles = StyleSheet.create({
   },
   screenContainer: {
     flex: 1,
+    paddingVertical: SPACING.xxl,
     paddingHorizontal: SPACING.lg,
   },
 

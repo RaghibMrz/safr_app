@@ -10,14 +10,13 @@ export const styles = StyleSheet.create({
   screenContainer: {
     flex: 1,
     paddingHorizontal: SPACING.lg,
-    paddingTop: Platform.OS === "ios" ? SPACING.sm : SPACING.xl,
+    paddingTop: Platform.OS === "ios" ? SPACING.sm : SPACING.xxl,
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingVertical: SPACING.lg,
-    marginBottom: SPACING.md,
   },
   headerTitle: {
     ...TYPOGRAPHY.h2,
@@ -44,7 +43,6 @@ export const styles = StyleSheet.create({
     borderRadius: SPACING.sm,
     alignItems: "center",
     justifyContent: "center",
-    marginVertical: SPACING.lg,
     shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.3,

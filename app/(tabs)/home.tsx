@@ -172,7 +172,7 @@ export default function HomeScreen() {
             numberOfLines={1}
             ellipsizeMode="tail"
           >
-            Welcome, {userInfo?.username || "User"}!
+            Welcome, {userInfo?.username || "User"}.
           </Text>
           <TouchableOpacity
             style={styles.buttonOutline}
