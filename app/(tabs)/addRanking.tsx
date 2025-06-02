@@ -50,6 +50,7 @@ const { height: screenHeight } = Dimensions.get("window");
 // Layout constants for initial city positioning
 const INITIAL_SPACING = SPACING.md;
 const ICONS_PER_ROW = 5; // Number of city icons to display per row in the unranked area
+const MAX_UNRANKED_CITIES = 10; // New constant: Maximum number of unranked cities allowed at one time
 
 interface City {
   id: number;
@@ -362,8 +363,22 @@ export default function AddRankingScreen() {
         return;
       }
 
-      // Calculate initial position based on the current number of unranked cities
+      // Filter only currently unranked cities to check against the limit
       const unrankedCities = selectedCities.filter((c) => c.score === 0);
+
+      // Check if the limit of unranked cities has been reached
+      if (unrankedCities.length >= MAX_UNRANKED_CITIES) {
+        Alert.alert(
+          "Limit Reached",
+          `You can only have up to ${MAX_UNRANKED_CITIES} unranked cities at a time. Please rank or remove existing cities.`
+        );
+        setShowSearchModal(false); // Close modal
+        setSearchTerm(""); // Clear search term
+        setDebouncedSearchTerm("");
+        return; // Prevent adding the new city
+      }
+
+      // Calculate initial position based on the current number of unranked cities
       const index = unrankedCities.length; // New city will be at this index among unranked
       const row = Math.floor(index / ICONS_PER_ROW);
       const col = index % ICONS_PER_ROW;

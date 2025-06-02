@@ -49,3 +49,5 @@ export const CITY_COLORS = [
   "#1DD1A1",
   "#FFA502",
 ];
+
+export const MAX_UNRANKED_CITIES = 10;
