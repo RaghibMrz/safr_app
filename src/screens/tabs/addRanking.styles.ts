@@ -1,9 +1,15 @@
 // src/screens/tabs/addRanking.styles.ts
 import { Dimensions, Platform, StyleSheet } from "react-native";
-import { COLORS, FONT_WEIGHTS, SPACING, TYPOGRAPHY } from "../../theme";
+import {
+  COLORS,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  SPACING,
+  TYPOGRAPHY,
+} from "../../theme";
+import { CITY_ICON_SIZE, MODAL_HEIGHT_RATIO } from "./addRanking.constants";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
-const CITY_ICON_SIZE = 60;
 
 export const styles = StyleSheet.create({
   safeArea: {
@@ -93,13 +99,10 @@ export const styles = StyleSheet.create({
     color: COLORS.white,
     position: "absolute",
     bottom: 5,
-    fontSize: 10,
+    fontSize: FONT_SIZES.xxs,
     fontWeight: FONT_WEIGHTS.bold,
   },
   removeCityButton: {
-    position: "absolute",
-    top: -5,
-    right: -5,
     backgroundColor: COLORS.error,
     borderRadius: 10,
   },
@@ -205,7 +208,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: SPACING.lg,
     paddingTop: SPACING.lg,
     paddingBottom: Platform.OS === "ios" ? 34 : SPACING.lg,
-    height: screenHeight * 0.4,
+    height: screenHeight * MODAL_HEIGHT_RATIO,
     shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.2,
@@ -286,48 +289,4 @@ export const styles = StyleSheet.create({
     paddingVertical: SPACING.sm,
     marginBottom: SPACING.md,
   },
-
-  // Old styles kept for reference
-  listHeaderContainer: {
-    paddingTop: Platform.OS === "ios" ? SPACING.sm : SPACING.lg,
-    marginBottom: SPACING.sm,
-  },
-  label: {
-    ...TYPOGRAPHY.bodyMedium,
-    fontSize: TYPOGRAPHY.sizes.lg,
-    color: COLORS.textPrimary,
-    fontWeight: FONT_WEIGHTS.semiBold,
-    marginBottom: SPACING.md,
-    marginTop: SPACING.lg,
-  },
-  searchInput: {
-    width: "100%",
-    height: 50,
-    backgroundColor: COLORS.surface,
-    borderColor: COLORS.border,
-    borderWidth: 1,
-    borderRadius: SPACING.sm,
-    paddingHorizontal: SPACING.md,
-    fontSize: TYPOGRAPHY.sizes.md,
-    color: COLORS.textPrimary,
-    marginBottom: SPACING.lg,
-    shadowColor: COLORS.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-  },
 });
-
-export const CITY_COLORS = [
-  "#FF6B6B",
-  "#4ECDC4",
-  "#45B7D1",
-  "#96CEB4",
-  "#FECA57",
-  "#FF9FF3",
-  "#54A0FF",
-  "#48DBFB",
-  "#1DD1A1",
-  "#FFA502",
-];

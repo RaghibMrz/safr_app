@@ -1,6 +1,6 @@
 // app/(tabs)/addRanking.tsx
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import React, {
   useCallback,
   useContext,
@@ -14,9 +14,8 @@ import {
   Alert,
   Animated,
   Dimensions,
-  FlatList,
+  Easing,
   KeyboardAvoidingView,
-  Modal,
   PanResponder,
   Platform,
   SafeAreaView,
@@ -25,17 +24,28 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  Easing,
 } from "react-native";
 
 import apiService from "../../src/api";
 import { AuthContext } from "../../src/context/AuthContext";
-import { CITY_COLORS, styles } from "../../src/screens/tabs/addRanking.styles";
+import { DraggableCity } from "../../src/components/ranking/DraggableCity";
+import { SearchModal } from "../../src/components/ranking/SearchModal";
+import { RankingLine } from "../../src/components/ranking/RankingLine";
+import {
+  CITY_COLORS,
+  CITY_ICON_SIZE,
+  FOCUS_INPUT_DELAY,
+  LINE_Y_OFFSET,
+  MAX_CITIES_FETCH,
+  MAX_SEARCH_RESULTS,
+  MODAL_ANIMATION_DURATION,
+  RANKING_LINE_WIDTH,
+  SEARCH_DEBOUNCE_DELAY,
+} from "../../src/screens/tabs/addRanking.constants";
+import { styles } from "../../src/screens/tabs/addRanking.styles";
 import { COLORS, SPACING } from "../../src/theme";
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
-const RANKING_LINE_WIDTH = screenWidth - SPACING.xl * 2 - 60; // Account for labels
-const CITY_ICON_SIZE = 80;
+const { height: screenHeight } = Dimensions.get("window");
 
 interface City {
   id: number;
@@ -43,7 +53,7 @@ interface City {
   country: string;
 }
 
-interface DraggableCity extends City {
+interface DraggableCityData extends City {
   score: number;
   color: string;
   position: { x: number; y: number };
@@ -53,14 +63,19 @@ export default function AddRankingScreen() {
   const authContext = useContext(AuthContext);
   const router = useRouter();
 
+  // Refs
   const searchInputRef = useRef<TextInput>(null);
   const modalOpacity = useRef(new Animated.Value(0)).current;
-  const modalTranslateY = useRef(new Animated.Value(screenHeight)).current; // Start off-screen
+  const modalTranslateY = useRef(new Animated.Value(screenHeight)).current;
+  const cityPositions = useRef<{ [key: number]: Animated.ValueXY }>({});
+  const colorIndex = useRef(0);
+  const rankingLineRef = useRef<View>(null);
 
+  // State
   const [allCities, setAllCities] = useState<City[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>("");
-  const [selectedCities, setSelectedCities] = useState<DraggableCity[]>([]);
+  const [selectedCities, setSelectedCities] = useState<DraggableCityData[]>([]);
   const [isLoadingCities, setIsLoadingCities] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fetchError, setFetchError] = useState("");
@@ -68,11 +83,6 @@ export default function AddRankingScreen() {
   const [currentDraggingId, setCurrentDraggingId] = useState<number | null>(
     null
   );
-
-  // Animation values for each city
-  const cityPositions = useRef<{ [key: number]: Animated.ValueXY }>({});
-  const colorIndex = useRef(0);
-  const rankingLineRef = useRef<View>(null);
   const [rankingLineLayout, setRankingLineLayout] = useState({
     x: 0,
     y: 0,
@@ -80,25 +90,33 @@ export default function AddRankingScreen() {
     height: 0,
   });
 
-  if (!authContext) {
-    console.error("AuthContext is not available in AddRankingScreen.");
-    return (
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.centeredLoaderContainer}>
-          <Text style={{ color: COLORS.error }}>Service unavailable.</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
+  // Clear state when navigating away
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        // Clear all state when leaving the screen
+        setSelectedCities([]);
+        setSearchTerm("");
+        setDebouncedSearchTerm("");
+        Object.keys(cityPositions.current).forEach((key) => {
+          delete cityPositions.current[parseInt(key)];
+        });
+        colorIndex.current = 0;
+      };
+    }, [])
+  );
 
+  // Fetch cities on mount
   const fetchCities = useCallback(async () => {
     setIsLoadingCities(true);
     setFetchError("");
     try {
-      const cityData = await apiService.getCities(0, 15000);
+      const cityData = await apiService.getCities(0, MAX_CITIES_FETCH);
       setAllCities(cityData);
-    } catch (e: any) {
-      setFetchError(e.message || "Failed to load cities. Please try again.");
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to load cities";
+      setFetchError(errorMessage);
       setAllCities([]);
     } finally {
       setIsLoadingCities(false);
@@ -109,26 +127,27 @@ export default function AddRankingScreen() {
     fetchCities();
   }, [fetchCities]);
 
+  // Debounce search term
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
-    }, 300);
+    }, SEARCH_DEBOUNCE_DELAY);
 
-    return () => {
-      clearTimeout(handler);
-    };
+    return () => clearTimeout(handler);
   }, [searchTerm]);
+
+  // Modal animations
   useEffect(() => {
     if (showSearchModal) {
       Animated.parallel([
         Animated.timing(modalOpacity, {
           toValue: 1,
-          duration: 300,
+          duration: MODAL_ANIMATION_DURATION.OPEN,
           useNativeDriver: true,
         }),
         Animated.timing(modalTranslateY, {
           toValue: 0,
-          duration: 300,
+          duration: MODAL_ANIMATION_DURATION.OPEN,
           easing: Easing.out(Easing.ease),
           useNativeDriver: true,
         }),
@@ -137,42 +156,45 @@ export default function AddRankingScreen() {
       Animated.parallel([
         Animated.timing(modalOpacity, {
           toValue: 0,
-          duration: 200,
+          duration: MODAL_ANIMATION_DURATION.CLOSE,
           useNativeDriver: true,
         }),
         Animated.timing(modalTranslateY, {
           toValue: screenHeight,
-          duration: 200,
+          duration: MODAL_ANIMATION_DURATION.CLOSE,
           easing: Easing.in(Easing.ease),
           useNativeDriver: true,
         }),
       ]).start();
     }
-  }, [showSearchModal]);
+  }, [showSearchModal, modalOpacity, modalTranslateY]);
+
+  // Focus input when modal opens
   useEffect(() => {
     if (showSearchModal) {
       const timer = setTimeout(() => {
         searchInputRef.current?.focus();
-      }, 50);
+      }, FOCUS_INPUT_DELAY);
 
       return () => clearTimeout(timer);
     }
   }, [showSearchModal]);
 
+  // Filter cities based on search
   const displayedCities = useMemo(() => {
     const trimmedSearch = debouncedSearchTerm.trim().toLowerCase();
-    if (!trimmedSearch) {
-      return [];
-    }
+    if (!trimmedSearch) return [];
+
     return allCities
       .filter(
         (city) =>
           city.name.toLowerCase().includes(trimmedSearch) ||
           city.country.toLowerCase().includes(trimmedSearch)
       )
-      .slice(0, 50);
+      .slice(0, MAX_SEARCH_RESULTS);
   }, [allCities, debouncedSearchTerm]);
 
+  // Create pan responder for draggable cities
   const createPanResponder = useCallback(
     (cityId: number) => {
       return PanResponder.create({
@@ -207,10 +229,7 @@ export default function AddRankingScreen() {
 
           position.flattenOffset();
 
-          // Get absolute position
           const absoluteY = gestureState.moveY;
-
-          // Check if Y position is near the ranking line
           const lineTop = rankingLineLayout.y - CITY_ICON_SIZE / 2;
           const lineBottom =
             rankingLineLayout.y + rankingLineLayout.height + CITY_ICON_SIZE / 2;
@@ -229,7 +248,7 @@ export default function AddRankingScreen() {
               rankingLineLayout.y +
               rankingLineLayout.height / 2 -
               CITY_ICON_SIZE / 2 -
-              200; // Adjust for city spawn area
+              LINE_Y_OFFSET;
 
             // Update city data
             setSelectedCities((prev) =>
@@ -265,6 +284,7 @@ export default function AddRankingScreen() {
     [selectedCities, rankingLineLayout]
   );
 
+  // Handle city selection
   const handleSelectCity = useCallback(
     (city: City) => {
       if (selectedCities.find((c) => c.id === city.id)) {
@@ -277,7 +297,7 @@ export default function AddRankingScreen() {
 
       cityPositions.current[city.id] = new Animated.ValueXY({ x: 0, y: 0 });
 
-      const newCity: DraggableCity = {
+      const newCity: DraggableCityData = {
         ...city,
         score: 0,
         color: CITY_COLORS[colorIndex.current % CITY_COLORS.length],
@@ -293,25 +313,14 @@ export default function AddRankingScreen() {
     [selectedCities]
   );
 
+  // Handle city removal (no confirmation)
   const handleRemoveCity = useCallback((cityId: number) => {
-    Alert.alert(
-      "Remove City",
-      "Are you sure you want to remove this city from your ranking?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Remove",
-          style: "destructive",
-          onPress: () => {
-            delete cityPositions.current[cityId];
-            setSelectedCities((prev) => prev.filter((c) => c.id !== cityId));
-          },
-        },
-      ]
-    );
+    delete cityPositions.current[cityId];
+    setSelectedCities((prev) => prev.filter((c) => c.id !== cityId));
   }, []);
 
-  const handleSubmitRankings = async () => {
+  // Handle ranking submission
+  const handleSubmitRankings = useCallback(async () => {
     const citiesWithScores = selectedCities.filter((city) => city.score > 0);
 
     if (citiesWithScores.length === 0) {
@@ -324,49 +333,69 @@ export default function AddRankingScreen() {
 
     setIsSubmitting(true);
     try {
-      await Promise.all(
+      const results = await Promise.allSettled(
         citiesWithScores.map((city) =>
           apiService.addOrUpdateRanking(city.id, city.score)
         )
       );
 
+      const successCount = results.filter(
+        (r) => r.status === "fulfilled"
+      ).length;
+      const failedCount = results.filter((r) => r.status === "rejected").length;
+
+      if (failedCount > 0) {
+        console.error(`Failed to submit ${failedCount} rankings`);
+      }
+
       Alert.alert(
         "Rankings Submitted!",
-        `Successfully saved rankings for ${citiesWithScores.length} cities.`,
+        `Successfully saved ${successCount} out of ${citiesWithScores.length} rankings.`,
         [
           {
             text: "OK",
             onPress: () => {
-              // Clear the selected cities and their positions
-              setSelectedCities([]); // Add this line
-              cityPositions.current = {}; // And this to clear animated values
+              setSelectedCities([]);
+              cityPositions.current = {};
+              colorIndex.current = 0;
               router.replace("/(tabs)/home");
             },
           },
         ]
       );
-    } catch (e: any) {
-      Alert.alert(
-        "Error",
-        e.message || "Failed to submit rankings. Please try again."
-      );
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to submit rankings";
+      Alert.alert("Error", errorMessage);
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [selectedCities, router]);
 
-  const renderSearchResult = ({ item }: { item: City }) => (
-    <TouchableOpacity
-      style={styles.searchResultItem}
-      onPress={() => handleSelectCity(item)}
-      activeOpacity={0.7}
-    >
-      <Text style={styles.searchResultText}>
-        {item.name}, {item.country}
-      </Text>
-      <Ionicons name="add-circle-outline" size={24} color={COLORS.primary} />
-    </TouchableOpacity>
-  );
+  // Handle modal close
+  const handleModalClose = useCallback(() => {
+    setShowSearchModal(false);
+    setSearchTerm("");
+    setDebouncedSearchTerm("");
+  }, []);
+
+  // Handle ranking line layout
+  const handleRankingLineLayout = useCallback(() => {
+    rankingLineRef.current?.measureInWindow((x, y, width, height) => {
+      setRankingLineLayout({ x, y, width, height });
+    });
+  }, []);
+
+  // Loading state
+  if (!authContext) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.centeredLoaderContainer}>
+          <Text style={{ color: COLORS.error }}>Service unavailable.</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (isLoadingCities && allCities.length === 0) {
     return (
@@ -383,10 +412,7 @@ export default function AddRankingScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar
-        barStyle={Platform.OS === "ios" ? "dark-content" : "dark-content"}
-        backgroundColor={COLORS.background}
-      />
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -425,70 +451,14 @@ export default function AddRankingScreen() {
                   const isDragging = currentDraggingId === city.id;
 
                   return (
-                    <Animated.View // This outer Animated.View will now be the draggable CONTAINER.
-                      // It's still animated because 'position' (Animated.ValueXY) is applied to its transform.
+                    <DraggableCity
                       key={city.id}
-                      style={[
-                        {
-                          position: "absolute", // Crucial for animating its absolute position
-                          transform: position
-                            ? [
-                                { translateX: position.x },
-                                { translateY: position.y },
-                              ]
-                            : [],
-                          zIndex: isDragging ? 1000 : city.score > 0 ? 10 : 1,
-                          elevation: isDragging ? 10 : 5,
-                          // The container needs to be large enough to contain both the icon and the X button.
-                          // It's usually the size of the main draggable part (cityIcon).
-                          width: CITY_ICON_SIZE, // Assuming cityIcon has fixed size
-                          height: CITY_ICON_SIZE,
-                        },
-                      ]}
-                    >
-                      {/* This is the actual visual city icon, and it will now be the ONLY target for PanResponder. */}
-                      <View
-                        style={[
-                          styles.cityIcon,
-                          { backgroundColor: city.color },
-                        ]}
-                        {...panResponder.panHandlers} // *** PanResponder now applies ONLY here! ***
-                      >
-                        <Text style={styles.cityIconText} numberOfLines={1}>
-                          {city.name.substring(0, 3).toUpperCase()}
-                        </Text>
-                        {city.score > 0 && (
-                          <Text style={styles.cityScoreText}>{city.score}</Text>
-                        )}
-                      </View>
-
-                      {/* The remove button, now a sibling to the draggable icon,
-                          but positioned absolutely relative to the outer Animated.View container. */}
-                      <TouchableOpacity
-                        style={[
-                          styles.removeCityButton,
-                          {
-                            position: "absolute",
-                            right: 0, // Adjust these values based on your visual design.
-                            top: 0, // They are relative to the outer Animated.View.
-                            // These transform values will nudge the button further to appear
-                            // outside the corner of the city icon, while still being contained.
-                            transform: [
-                              { translateX: -15 },
-                              { translateY: -5 },
-                            ], // Nudge it outside
-                          },
-                        ]}
-                        onPress={() => handleRemoveCity(city.id)}
-                        hitSlop={{ top: 5, bottom: 5, left: 5, right: 5 }}
-                      >
-                        <Ionicons
-                          name="close-circle"
-                          size={20}
-                          color={COLORS.white}
-                        />
-                      </TouchableOpacity>
-                    </Animated.View>
+                      city={city}
+                      position={position}
+                      isDragging={isDragging}
+                      panResponder={panResponder.panHandlers}
+                      onRemove={handleRemoveCity}
+                    />
                   );
                 })}
               </View>
@@ -496,35 +466,10 @@ export default function AddRankingScreen() {
           </View>
 
           {/* Ranking Line */}
-          <View style={styles.rankingContainer}>
-            <Text style={styles.rankingLabelLeft}>0</Text>
-            <View
-              ref={rankingLineRef}
-              style={styles.rankingLineWrapper}
-              onLayout={(event) => {
-                const layout = event.nativeEvent.layout;
-                // Measure relative to the window
-                rankingLineRef.current?.measureInWindow(
-                  (x, y, width, height) => {
-                    setRankingLineLayout({ x, y, width, height });
-                  }
-                );
-              }}
-            >
-              <View style={styles.rankingLine} />
-              {/* Score markers */}
-              {[0, 25, 50, 75, 100].map((value) => (
-                <View
-                  key={value}
-                  style={[styles.scoreMarker, { left: `${value}%` }]}
-                >
-                  <View style={styles.markerLine} />
-                  <Text style={styles.markerText}>{value}</Text>
-                </View>
-              ))}
-            </View>
-            <Text style={styles.rankingLabelRight}>100</Text>
-          </View>
+          <RankingLine
+            ref={rankingLineRef}
+            onLayout={handleRankingLineLayout}
+          />
 
           {/* Submit Button */}
           {selectedCities.length > 0 && (
@@ -548,85 +493,18 @@ export default function AddRankingScreen() {
       </KeyboardAvoidingView>
 
       {/* Search Modal */}
-      <Modal
+      <SearchModal
+        ref={searchInputRef}
         visible={showSearchModal}
-        animationType="none" // Important: Disable default modal animation
-        transparent={true}
-        onRequestClose={() => setShowSearchModal(false)}
-      >
-        <Animated.View // Apply backdrop animation here
-          style={[
-            styles.modalBackdrop,
-            { opacity: modalOpacity }, // Animated opacity
-          ]}
-        >
-          {/* The TouchableOpacity covers the entire backdrop to dismiss the modal */}
-          <TouchableOpacity
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              top: 0,
-              bottom: 0,
-            }}
-            activeOpacity={1}
-            onPress={() => {
-              setShowSearchModal(false);
-              setSearchTerm("");
-              setDebouncedSearchTerm("");
-            }}
-          />
-        </Animated.View>
-
-        <Animated.View // Apply slide animation here
-          style={[
-            styles.modalContent,
-            { transform: [{ translateY: modalTranslateY }] }, // Animated translateY
-          ]}
-        >
-          {/* The rest of your existing modal content goes here */}
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Search Cities</Text>
-            <TouchableOpacity
-              onPress={() => {
-                setShowSearchModal(false);
-                setSearchTerm("");
-                setDebouncedSearchTerm("");
-              }}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Ionicons name="close" size={24} color={COLORS.textPrimary} />
-            </TouchableOpacity>
-          </View>
-
-          <TextInput
-            ref={searchInputRef}
-            style={styles.modalSearchInput}
-            placeholder="Type city name..."
-            placeholderTextColor={COLORS.placeholder}
-            value={searchTerm}
-            onChangeText={setSearchTerm}
-            autoCapitalize="words"
-            returnKeyType="search"
-          />
-
-          <FlatList
-            data={displayedCities}
-            renderItem={renderSearchResult}
-            keyExtractor={(item) => item.id.toString()}
-            style={styles.searchResultsList}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            ListEmptyComponent={
-              searchTerm.trim() && !isLoadingCities ? (
-                <Text style={styles.noResultsText}>
-                  No cities found matching "{searchTerm}"
-                </Text>
-              ) : null
-            }
-          />
-        </Animated.View>
-      </Modal>
+        searchTerm={searchTerm}
+        onSearchTermChange={setSearchTerm}
+        onClose={handleModalClose}
+        onSelectCity={handleSelectCity}
+        displayedCities={displayedCities}
+        isLoading={isLoadingCities}
+        modalOpacity={modalOpacity}
+        modalTranslateY={modalTranslateY}
+      />
     </SafeAreaView>
   );
 }
