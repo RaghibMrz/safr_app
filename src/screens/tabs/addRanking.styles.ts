@@ -192,7 +192,7 @@ export const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "rgba(0, 0, 0, 0.25)",
   },
   modalContent: {
     position: "absolute",
@@ -205,7 +205,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: SPACING.lg,
     paddingTop: SPACING.lg,
     paddingBottom: Platform.OS === "ios" ? 34 : SPACING.lg,
-    height: screenHeight * 0.85,
+    height: screenHeight * 0.5,
     shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.2,
