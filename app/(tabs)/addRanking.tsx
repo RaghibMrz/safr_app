@@ -292,6 +292,9 @@ export default function AddRankingScreen() {
           {
             text: "OK",
             onPress: () => {
+              // Clear the selected cities and their positions
+              setSelectedCities([]); // Add this line
+              cityPositions.current = {}; // And this to clear animated values
               router.replace("/(tabs)/home");
             },
           },
