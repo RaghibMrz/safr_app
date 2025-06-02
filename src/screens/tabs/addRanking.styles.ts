@@ -318,3 +318,16 @@ export const styles = StyleSheet.create({
     elevation: 2,
   },
 });
+
+export const CITY_COLORS = [
+  "#FF6B6B",
+  "#4ECDC4",
+  "#45B7D1",
+  "#96CEB4",
+  "#FECA57",
+  "#FF9FF3",
+  "#54A0FF",
+  "#48DBFB",
+  "#1DD1A1",
+  "#FFA502",
+];

@@ -29,13 +29,12 @@ import {
 
 import apiService from "../../src/api";
 import { AuthContext } from "../../src/context/AuthContext";
-import { styles } from "../../src/screens/tabs/addRanking.styles";
+import { CITY_COLORS, styles } from "../../src/screens/tabs/addRanking.styles";
 import { COLORS, SPACING } from "../../src/theme";
 
 const { width: screenWidth } = Dimensions.get("window");
 const RANKING_LINE_WIDTH = screenWidth - SPACING.xl * 2 - 60; // Account for labels
-const RANKING_LINE_HEIGHT = 60;
-const CITY_ICON_SIZE = 60;
+const CITY_ICON_SIZE = 80;
 
 interface City {
   id: number;
@@ -48,19 +47,6 @@ interface DraggableCity extends City {
   color: string;
   position: { x: number; y: number };
 }
-
-const CITY_COLORS = [
-  "#FF6B6B",
-  "#4ECDC4",
-  "#45B7D1",
-  "#96CEB4",
-  "#FECA57",
-  "#FF9FF3",
-  "#54A0FF",
-  "#48DBFB",
-  "#1DD1A1",
-  "#FFA502",
-];
 
 export default function AddRankingScreen() {
   const authContext = useContext(AuthContext);
@@ -198,7 +184,7 @@ export default function AddRankingScreen() {
               rankingLineLayout.y +
               rankingLineLayout.height / 2 -
               CITY_ICON_SIZE / 2 -
-              100; // Adjust for city spawn area
+              200; // Adjust for city spawn area
 
             // Update city data
             setSelectedCities((prev) =>
@@ -391,12 +377,12 @@ export default function AddRankingScreen() {
                   const isDragging = currentDraggingId === city.id;
 
                   return (
-                    <Animated.View
+                    <Animated.View // This outer Animated.View will now be the draggable CONTAINER.
+                      // It's still animated because 'position' (Animated.ValueXY) is applied to its transform.
                       key={city.id}
                       style={[
-                        styles.cityIcon,
                         {
-                          backgroundColor: city.color,
+                          position: "absolute", // Crucial for animating its absolute position
                           transform: position
                             ? [
                                 { translateX: position.x },
@@ -404,22 +390,49 @@ export default function AddRankingScreen() {
                               ]
                             : [],
                           zIndex: isDragging ? 1000 : city.score > 0 ? 10 : 1,
-                          opacity: isDragging ? 0.8 : 1,
                           elevation: isDragging ? 10 : 5,
+                          // The container needs to be large enough to contain both the icon and the X button.
+                          // It's usually the size of the main draggable part (cityIcon).
+                          width: CITY_ICON_SIZE, // Assuming cityIcon has fixed size
+                          height: CITY_ICON_SIZE,
                         },
                       ]}
-                      {...panResponder.panHandlers}
                     >
-                      <Text style={styles.cityIconText} numberOfLines={1}>
-                        {city.name.substring(0, 3).toUpperCase()}
-                      </Text>
-                      {city.score > 0 && (
-                        <Text style={styles.cityScoreText}>{city.score}</Text>
-                      )}
+                      {/* This is the actual visual city icon, and it will now be the ONLY target for PanResponder. */}
+                      <View
+                        style={[
+                          styles.cityIcon,
+                          { backgroundColor: city.color },
+                        ]}
+                        {...panResponder.panHandlers} // *** PanResponder now applies ONLY here! ***
+                      >
+                        <Text style={styles.cityIconText} numberOfLines={1}>
+                          {city.name.substring(0, 3).toUpperCase()}
+                        </Text>
+                        {city.score > 0 && (
+                          <Text style={styles.cityScoreText}>{city.score}</Text>
+                        )}
+                      </View>
+
+                      {/* The remove button, now a sibling to the draggable icon,
+                          but positioned absolutely relative to the outer Animated.View container. */}
                       <TouchableOpacity
-                        style={styles.removeCityButton}
+                        style={[
+                          styles.removeCityButton,
+                          {
+                            position: "absolute",
+                            right: 0, // Adjust these values based on your visual design.
+                            top: 0, // They are relative to the outer Animated.View.
+                            // These transform values will nudge the button further to appear
+                            // outside the corner of the city icon, while still being contained.
+                            transform: [
+                              { translateX: -15 },
+                              { translateY: -5 },
+                            ], // Nudge it outside
+                          },
+                        ]}
                         onPress={() => handleRemoveCity(city.id)}
-                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        hitSlop={{ top: 5, bottom: 5, left: 5, right: 5 }}
                       >
                         <Ionicons
                           name="close-circle"
