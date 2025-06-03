@@ -16,8 +16,7 @@ interface UserInfo {
   id: number;
   username: string;
   email: string;
-  created_at: string; // Or Date, if you parse it
-  // Add any other fields you expect in userInfo from your /users/me endpoint
+  created_at: string;
 }
 
 interface AuthContextType {

@@ -39,6 +39,7 @@ export const FONT_WEIGHTS = {
 // Define a typographic scale for font sizes.
 // Using a consistent scale helps maintain visual harmony.
 export const FONT_SIZES = {
+  xxs: 10, // Extra extra small
   xs: 12, // Extra small
   sm: 14, // Small
   md: 16, // Medium (base size for body text)

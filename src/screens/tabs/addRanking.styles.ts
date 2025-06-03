@@ -1,6 +1,19 @@
-// app/(tabs)/addRanking.styles.ts
-import { Platform, StyleSheet } from "react-native";
-import { COLORS, FONT_WEIGHTS, SPACING, TYPOGRAPHY } from "../../theme";
+// src/screens/tabs/addRanking.styles.ts
+import { Dimensions, Platform, StyleSheet } from "react-native";
+import {
+  COLORS,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  SPACING,
+  TYPOGRAPHY,
+} from "../../theme";
+import {
+  CITY_ICON_SIZE,
+  IOS_ADJUST_MODAL,
+  MODAL_HEIGHT_RATIO,
+} from "./addRanking.constants";
+
+const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
 export const styles = StyleSheet.create({
   safeArea: {
@@ -12,104 +25,156 @@ export const styles = StyleSheet.create({
   },
   screenContainer: {
     flex: 1,
-    paddingHorizontal: SPACING.lg, // 16px
+    paddingVertical: SPACING.xxl,
+    paddingHorizontal: SPACING.lg,
   },
-  // Styles for ListHeaderComponent content
-  listHeaderContainer: {
+
+  // Header
+  header: {
     paddingTop: Platform.OS === "ios" ? SPACING.sm : SPACING.lg,
-    marginBottom: SPACING.sm, // Reduced margin as search input will have its own
+    paddingBottom: SPACING.lg,
   },
-  // Screen title is handled by navigator options, so not styled here unless needed for a subtitle
-  label: {
-    ...TYPOGRAPHY.bodyMedium,
-    fontSize: TYPOGRAPHY.sizes.lg, // 18px
+  headerTitle: {
+    ...TYPOGRAPHY.h3,
     color: COLORS.textPrimary,
-    fontWeight: FONT_WEIGHTS.semiBold,
-    marginBottom: SPACING.md, // 12px
-    marginTop: SPACING.lg, // 16px
+    marginBottom: SPACING.xs,
   },
-  searchInput: {
-    // New style for the search input
-    width: "100%",
-    height: 50, // Slightly shorter than main inputs for distinction
+  headerSubtitle: {
+    ...TYPOGRAPHY.bodyRegular,
+    color: COLORS.textSecondary,
+  },
+
+  // Search Button
+  searchButton: {
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: COLORS.surface,
-    borderColor: COLORS.border,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    borderRadius: SPACING.md,
     borderWidth: 1,
-    borderRadius: SPACING.sm, // 8px
-    paddingHorizontal: SPACING.md, // 12px
-    fontSize: TYPOGRAPHY.sizes.md, // 16px
-    color: COLORS.textPrimary,
-    marginBottom: SPACING.lg, // 16px margin below search input
+    borderColor: COLORS.border,
+    marginBottom: SPACING.xl,
     shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 2,
   },
-  // Styles for the FlatList of cities
-  cityList: {
-    // The FlatList itself. If it's the main scroller, it might not need much direct styling.
-    // Consider max height if it's not meant to take the whole screen before score input.
-    // For now, assuming it's the primary scroller within its designated area.
-  },
-  cityPickerItem: {
-    backgroundColor: COLORS.surface,
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.lg,
-    borderBottomWidth: StyleSheet.hairlineWidth, // Thinner separator
-    borderBottomColor: COLORS.divider,
-    // Removed individual item border/marginBottom for a more continuous list feel
-  },
-  cityPickerItemText: {
+  searchButtonText: {
     ...TYPOGRAPHY.bodyRegular,
-    fontSize: TYPOGRAPHY.sizes.md,
-    color: COLORS.textPrimary,
+    color: COLORS.placeholder,
+    marginLeft: SPACING.sm,
   },
-  cityPickerItemSelected: {
-    backgroundColor: COLORS.secondary,
-    // Optionally, add a visual cue like a border or icon for selection
-    // borderLeftWidth: 3,
-    // borderLeftColor: COLORS.primary,
-  },
-  // Styles for ListFooterComponent content
-  listFooterContainer: {
-    paddingTop: SPACING.md, // Reduced top padding if search results are above
-    // paddingHorizontal: SPACING.lg, // screenContainer handles this
-  },
-  selectedCityText: {
-    ...TYPOGRAPHY.bodyMedium,
-    fontSize: TYPOGRAPHY.sizes.md,
-    color: COLORS.primary,
-    fontWeight: FONT_WEIGHTS.bold,
-    textAlign: "center",
-    marginVertical: SPACING.lg,
-  },
-  input: {
-    // For the score input
-    width: "100%",
-    height: 55,
-    backgroundColor: COLORS.surface,
-    borderColor: COLORS.border,
-    borderWidth: 1.5, // Consistent with auth inputs
-    borderRadius: SPACING.md, // 12px, more modern
-    paddingHorizontal: SPACING.lg,
-    fontSize: TYPOGRAPHY.sizes.md,
-    color: COLORS.textPrimary,
+
+  // Selected Cities Container
+  selectedCitiesContainer: {
+    minHeight: 100,
     marginBottom: SPACING.xl,
-    shadowColor: COLORS.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06, // Softer shadow
-    shadowRadius: 4,
-    elevation: 2,
   },
-  buttonPrimary: {
-    width: "100%",
-    backgroundColor: COLORS.primary,
-    paddingVertical: SPACING.lg,
-    borderRadius: SPACING.md, // Consistent 12px radius
+  cityIconsContainer: {
+    position: "relative",
+    minHeight: CITY_ICON_SIZE * 2, // Allow for at least 2 rows
+    // Removed flex properties as they don't work with absolute positioned children
+  },
+  cityIcon: {
+    width: CITY_ICON_SIZE,
+    height: CITY_ICON_SIZE,
+    borderRadius: CITY_ICON_SIZE / 2,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: SPACING.sm, // Reduced top margin
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+    position: "absolute",
+    left: 0,
+    top: 0,
+  },
+  cityIconText: {
+    ...TYPOGRAPHY.bodyMedium,
+    fontSize: TYPOGRAPHY.sizes.sm,
+    color: COLORS.white,
+    fontWeight: FONT_WEIGHTS.bold,
+  },
+  cityScoreText: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.white,
+    position: "absolute",
+    bottom: 5,
+    fontSize: FONT_SIZES.xxs,
+    fontWeight: FONT_WEIGHTS.bold,
+  },
+  removeCityButton: {
+    backgroundColor: COLORS.error,
+    borderRadius: 10,
+    size: 20,
+  },
+
+  // Ranking Container - Horizontal Line
+  rankingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: SPACING["3xl"],
+    marginTop: SPACING.xl,
+  },
+  rankingLineWrapper: {
+    flex: 1,
+    height: 80,
+    marginHorizontal: SPACING.sm,
+    position: "relative",
+    justifyContent: "center",
+  },
+  rankingLine: {
+    height: 4,
+    backgroundColor: COLORS.primary,
+    borderRadius: 2,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  scoreMarker: {
+    position: "absolute",
+    alignItems: "center",
+    top: 0,
+    bottom: 0,
+    width: 1,
+  },
+  markerLine: {
+    width: 1,
+    flex: 1,
+    backgroundColor: COLORS.divider,
+  },
+  markerText: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textMuted,
+    marginTop: SPACING.xs,
+  },
+  rankingLabelLeft: {
+    ...TYPOGRAPHY.bodyMedium,
+    color: COLORS.textSecondary,
+    fontWeight: FONT_WEIGHTS.semiBold,
+    width: 25,
+    textAlign: "center",
+  },
+  rankingLabelRight: {
+    ...TYPOGRAPHY.bodyMedium,
+    color: COLORS.textSecondary,
+    fontWeight: FONT_WEIGHTS.semiBold,
+    width: 30,
+    textAlign: "center",
+  },
+
+  // Submit Button
+  submitButton: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: SPACING.lg,
+    borderRadius: SPACING.md,
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: SPACING.xl,
     shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 3 },
@@ -117,39 +182,116 @@ export const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 4,
   },
-  buttonTextPrimary: {
+  submitButtonText: {
     ...TYPOGRAPHY.button,
     color: COLORS.textOnPrimary,
     fontWeight: FONT_WEIGHTS.bold,
-    fontSize: TYPOGRAPHY.sizes.lg, // Slightly larger button text
+    fontSize: TYPOGRAPHY.sizes.lg,
   },
+
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "transparent",
+  },
+  modalBackdrop: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  modalContent: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: COLORS.background,
+    borderTopLeftRadius: SPACING.xl,
+    borderTopRightRadius: SPACING.xl,
+    paddingHorizontal: SPACING.lg,
+    paddingTop: SPACING.lg,
+    paddingBottom: Platform.OS === "ios" ? 34 : SPACING.lg,
+    height: screenHeight * (MODAL_HEIGHT_RATIO + IOS_ADJUST_MODAL),
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: SPACING.lg,
+    paddingBottom: SPACING.md,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.divider,
+  },
+  modalTitle: {
+    ...TYPOGRAPHY.h3,
+    color: COLORS.textPrimary,
+  },
+  modalSearchInput: {
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: SPACING.sm,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    fontSize: TYPOGRAPHY.sizes.md,
+    color: COLORS.textPrimary,
+    marginBottom: SPACING.lg,
+  },
+  searchResultsList: {
+    flex: 1,
+  },
+  searchResultItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: COLORS.divider,
+  },
+  searchResultText: {
+    ...TYPOGRAPHY.bodyRegular,
+    color: COLORS.textPrimary,
+    flex: 1,
+  },
+  noResultsText: {
+    ...TYPOGRAPHY.bodyRegular,
+    color: COLORS.textMuted,
+    textAlign: "center",
+    marginVertical: SPACING.xl,
+  },
+
+  // Utility Styles
   buttonDisabled: {
     backgroundColor: COLORS.disabled,
     shadowOpacity: 0,
     elevation: 0,
   },
-  loader: {
-    marginVertical: SPACING.xl,
+  emptyText: {
+    ...TYPOGRAPHY.bodyRegular,
+    textAlign: "center",
+    color: COLORS.textMuted,
+    padding: SPACING.lg,
   },
   centeredLoaderContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     padding: SPACING.xl,
-    backgroundColor: COLORS.background, // Ensure consistent background
+    backgroundColor: COLORS.background,
   },
   errorText: {
     ...TYPOGRAPHY.bodySmall,
     color: COLORS.error,
     textAlign: "center",
-    paddingVertical: SPACING.sm, // Reduced padding
+    paddingVertical: SPACING.sm,
     marginBottom: SPACING.md,
-    minHeight: TYPOGRAPHY.lineHeights.sm, // Ensure space even if one line
-  },
-  emptyText: {
-    ...TYPOGRAPHY.bodyRegular,
-    textAlign: "center",
-    color: COLORS.textMuted,
-    padding: SPACING.lg, // Consistent padding
   },
 });
