@@ -55,3 +55,4 @@ export const CITY_COLORS = [
 export const MAX_UNRANKED_CITIES = 10;
 
 export const WIDGET_CITY_NAME_MAX_LENGTH = 3;
+export const WIDGET_REMOVE_BUTTON_SIZE = 20;

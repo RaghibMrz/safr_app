@@ -7,6 +7,7 @@ import {
   CITY_ICON_SIZE,
   REMOVE_BUTTON_OFFSET,
   WIDGET_CITY_NAME_MAX_LENGTH,
+  WIDGET_REMOVE_BUTTON_SIZE,
 } from "../../screens/tabs/addRanking.constants";
 import { COLORS } from "../../theme";
 import { DraggableCityProps } from "@/src/types/city";
@@ -63,7 +64,7 @@ export const DraggableCity: React.FC<DraggableCityProps> = ({
       >
         <Ionicons
           name="close-circle"
-          size={styles.removeCityButton.size}
+          size={WIDGET_REMOVE_BUTTON_SIZE}
           color={COLORS.white}
         />
       </TouchableOpacity>

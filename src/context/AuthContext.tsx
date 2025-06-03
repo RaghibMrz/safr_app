@@ -1,39 +1,15 @@
-// AuthContext.tsx
+// src/context/AuthContext.tsx
 import React, {
   createContext,
   useState,
   useEffect,
   ReactNode,
-  Dispatch,
-  SetStateAction,
+  useCallback,
 } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-// We will create api.ts in the next step.
-import apiService from "../api"; // Assuming api.ts will be in the same directory
+import apiService from "../api";
+import { AuthContextType, UserInfo } from "../types/auth";
 
-// Define types for the user information and context value
-interface UserInfo {
-  id: number;
-  username: string;
-  email: string;
-  created_at: string;
-}
-
-interface AuthContextType {
-  login: (username: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
-  signup: (username: string, email: string, password: string) => Promise<void>;
-  userToken: string | null;
-  userInfo: UserInfo | null;
-  isLoading: boolean;
-  // If you need to expose setUserInfo or setUserToken directly, add them here
-  // setUserInfo: Dispatch<SetStateAction<UserInfo | null>>;
-  // setUserToken: Dispatch<SetStateAction<string | null>>;
-}
-
-// 1. Create the Authentication Context with a default undefined value
-// or a default structure matching AuthContextType if preferred.
-// Using undefined initially and checking for it in consumers is common.
 export const AuthContext = createContext<AuthContextType | undefined>(
   undefined
 );
@@ -42,11 +18,39 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-// 2. Create the AuthProvider Component
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [userToken, setUserToken] = useState<string | null>(null);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+
+  const logout = useCallback(async (): Promise<void> => {
+    setIsLoading(true);
+    setUserToken(null);
+    setUserInfo(null);
+    try {
+      await AsyncStorage.removeItem("userToken");
+      await AsyncStorage.removeItem("userInfo");
+    } catch (e) {
+      console.error("Error removing auth data from AsyncStorage:", e);
+    }
+    setIsLoading(false);
+  }, []);
+
+  const validateToken = useCallback(async (): Promise<boolean> => {
+    const token = await AsyncStorage.getItem("userToken");
+    if (!token) return false;
+
+    try {
+      const info = await apiService.getCurrentUser(token);
+      setUserInfo(info);
+      await AsyncStorage.setItem("userInfo", JSON.stringify(info));
+      return true;
+    } catch (error) {
+      console.error("Token validation failed:", error);
+      await logout();
+      return false;
+    }
+  }, [logout]);
 
   const login = async (username: string, password: string): Promise<void> => {
     setIsLoading(true);
@@ -58,7 +62,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUserToken(token);
         await AsyncStorage.setItem("userToken", token);
 
-        const info = await apiService.getCurrentUser(token); // getCurrentUser should return UserInfo
+        const info = await apiService.getCurrentUser(token);
         setUserInfo(info);
         await AsyncStorage.setItem("userInfo", JSON.stringify(info));
       } else {
@@ -79,7 +83,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   ): Promise<void> => {
     setIsLoading(true);
     try {
-      const user = await apiService.signupUser(username, email, password); // signupUser should return UserInfo
+      const user = await apiService.signupUser(username, email, password);
       console.log("Signup successful in AuthContext:", user);
     } catch (error) {
       console.error("Signup error in AuthContext:", error);
@@ -89,20 +93,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const logout = async (): Promise<void> => {
-    setIsLoading(true);
-    setUserToken(null);
-    setUserInfo(null);
-    try {
-      await AsyncStorage.removeItem("userToken");
-      await AsyncStorage.removeItem("userInfo");
-    } catch (e) {
-      console.error("Error removing auth data from AsyncStorage:", e);
-    }
-    setIsLoading(false);
-  };
-
-  const isLoggedIn = async (): Promise<void> => {
+  const isLoggedIn = useCallback(async (): Promise<void> => {
     try {
       setIsLoading(true);
       const token = await AsyncStorage.getItem("userToken");
@@ -112,27 +103,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUserToken(token);
         if (storedUserInfoString) {
           setUserInfo(JSON.parse(storedUserInfoString) as UserInfo);
-        } else {
-          try {
-            const info = await apiService.getCurrentUser(token);
-            setUserInfo(info);
-            await AsyncStorage.setItem("userInfo", JSON.stringify(info));
-          } catch (fetchError) {
-            console.error(
-              "Error fetching user info with stored token:",
-              fetchError
-            );
-            await logout(); // Attempt to clear corrupted/stale state
-          }
         }
+        await validateToken();
       }
     } catch (e) {
       console.error("Error checking login status from AsyncStorage:", e);
-      await logout(); // Attempt to clear corrupted state
+      await logout();
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [logout, validateToken]);
 
   useEffect(() => {
     isLoggedIn();
@@ -144,6 +124,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         login,
         logout,
         signup,
+        validateToken,
         userToken,
         userInfo,
         isLoading,
