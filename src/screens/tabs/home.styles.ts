@@ -1,145 +1,299 @@
 // src/screens/tabs/home.styles.ts
 import { Platform, StyleSheet } from "react-native";
-import { COLORS, FONT_WEIGHTS, SPACING, TYPOGRAPHY } from "../../../src/theme"; // Adjusted path
+import { COLORS, FONT_WEIGHTS, SPACING, TYPOGRAPHY } from "../../theme";
+import { DELETE_BUTTON_WIDTH } from "./home.constants";
 
 export const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  screenContainer: {
-    flex: 1,
-    paddingHorizontal: SPACING.lg,
-    paddingTop: Platform.OS === "ios" ? SPACING.sm : SPACING.xxl,
+
+  // Header Styles
+  headerContainer: {
+    marginBottom: SPACING.md,
   },
-  header: {
+  gradientHeader: {
+    paddingTop: Platform.OS === "ios" ? SPACING.md : SPACING.xl,
+    paddingBottom: SPACING.xl,
+    paddingHorizontal: SPACING.lg,
+    borderBottomLeftRadius: SPACING.xl,
+    borderBottomRightRadius: SPACING.xl,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  headerContent: {
+    marginTop: SPACING.lg,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: SPACING.lg,
   },
-  headerTitle: {
+  userInfo: {
+    flex: 1,
+  },
+  greetingText: {
+    ...TYPOGRAPHY.bodyRegular,
+    color: COLORS.white,
+    opacity: 0.9,
+    marginTop: SPACING.md,
+  },
+  usernameText: {
     ...TYPOGRAPHY.h3,
-    color: COLORS.textPrimary,
-    flexShrink: 1,
+    color: COLORS.white,
+    fontWeight: FONT_WEIGHTS.bold,
   },
-  buttonOutline: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    borderRadius: SPACING.sm,
-    borderWidth: 1.5,
-    borderColor: COLORS.primary,
+  logoutButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    justifyContent: "center",
+    alignItems: "center",
     marginLeft: SPACING.md,
   },
-  buttonTextOutline: {
-    ...TYPOGRAPHY.button,
-    color: COLORS.primary,
-    fontWeight: FONT_WEIGHTS.bold,
-    fontSize: TYPOGRAPHY.sizes.sm,
+
+  // Stats Container
+  statsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    paddingHorizontal: SPACING.lg,
+    marginBottom: SPACING.xl,
   },
-  buttonPrimary: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: SPACING.md,
-    borderRadius: SPACING.sm,
+  statCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: SPACING.md,
+    padding: SPACING.md,
+    alignItems: "center",
+    flex: 1,
+    marginHorizontal: SPACING.xs,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  statNumber: {
+    ...TYPOGRAPHY.h3,
+    color: COLORS.textPrimary,
+    fontWeight: FONT_WEIGHTS.bold,
+    marginVertical: SPACING.xs,
+  },
+  statText: {
+    ...TYPOGRAPHY.h4,
+    color: COLORS.textPrimary,
+    fontWeight: FONT_WEIGHTS.bold,
+    marginVertical: SPACING.xs,
+    paddingBottom: SPACING.xxs,
+  },
+  statLabel: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textMuted,
+    textAlign: "center",
+  },
+
+  // Add Button
+  addButtonContainer: {
+    paddingHorizontal: SPACING.lg,
+    marginBottom: SPACING.xl,
+  },
+  addRankingButton: {
+    borderRadius: SPACING.md,
+    overflow: "hidden",
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  gradientButton: {
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    paddingVertical: SPACING.lg,
+    paddingHorizontal: SPACING.xl,
+  },
+  addButtonText: {
+    ...TYPOGRAPHY.button,
+    color: COLORS.white,
+    fontWeight: FONT_WEIGHTS.bold,
+    marginLeft: SPACING.sm,
+    fontSize: TYPOGRAPHY.sizes.lg,
+  },
+
+  // Section Title
+  sectionTitle: {
+    ...TYPOGRAPHY.h3,
+    color: COLORS.textPrimary,
+    fontWeight: FONT_WEIGHTS.bold,
+    marginBottom: SPACING.md,
+    marginHorizontal: SPACING.lg,
+  },
+
+  // List Styles
+  listContent: {
+    paddingBottom: SPACING.xl,
+  },
+  emptyListContent: {
+    flexGrow: 1,
+  },
+
+  // Empty States
+  centerContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingTop: SPACING["3xl"],
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: SPACING.xl,
+    paddingTop: SPACING["3xl"],
+  },
+  emptyTitle: {
+    ...TYPOGRAPHY.h3,
+    color: COLORS.textPrimary,
+    fontWeight: FONT_WEIGHTS.bold,
+    marginTop: SPACING.xl,
+    marginBottom: SPACING.sm,
+  },
+  emptySubtitle: {
+    ...TYPOGRAPHY.bodyRegular,
+    color: COLORS.textMuted,
+    textAlign: "center",
+    marginBottom: SPACING.xl,
+    paddingHorizontal: SPACING.xl,
+  },
+  emptyActionButton: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.xl,
+    borderRadius: 24,
     shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 4,
   },
-  buttonTextPrimary: {
+  emptyActionText: {
     ...TYPOGRAPHY.button,
-    color: COLORS.textOnPrimary,
+    color: COLORS.white,
     fontWeight: FONT_WEIGHTS.bold,
   },
-  list: {
-    flex: 1,
-  },
-  listHeader: {
-    ...TYPOGRAPHY.h3,
-    fontSize: TYPOGRAPHY.sizes.xl,
+
+  // Error State
+  errorText: {
+    ...TYPOGRAPHY.bodyRegular,
+    color: COLORS.error,
     textAlign: "center",
-    color: COLORS.textPrimary,
-    paddingTop: SPACING.xl,
-    marginBottom: SPACING.md,
-    marginTop: SPACING.sm,
+    marginVertical: SPACING.md,
+    paddingHorizontal: SPACING.xl,
   },
-  rankingItemCard: {
-    backgroundColor: COLORS.surface,
-    paddingVertical: SPACING.lg,
-    paddingHorizontal: SPACING.lg, // Consistent padding
-    borderRadius: SPACING.md,
+  retryButton: {
+    marginTop: SPACING.md,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.lg,
+    borderRadius: 24,
+    borderWidth: 1.5,
+    borderColor: COLORS.primary,
+  },
+  retryButtonText: {
+    ...TYPOGRAPHY.button,
+    color: COLORS.primary,
+    fontWeight: FONT_WEIGHTS.medium,
+  },
+
+  // Legacy styles (kept for compatibility)
+  screenContainer: {
+    flex: 1,
+    paddingHorizontal: SPACING.lg,
+    paddingTop: Platform.OS === "ios" ? SPACING.sm : SPACING.xxl,
+  },
+
+  // for SwipeableRankingItem
+  container: {
     marginBottom: SPACING.md,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    marginHorizontal: SPACING.lg,
+  },
+  deleteButtonContainer: {
+    position: "absolute",
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: DELETE_BUTTON_WIDTH,
+    backgroundColor: COLORS.error,
+    borderRadius: SPACING.md,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  deleteButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
+    height: "100%",
+  },
+  deleteText: {
+    color: COLORS.white,
+    fontSize: TYPOGRAPHY.sizes.xs,
+    marginTop: 2,
+    fontWeight: FONT_WEIGHTS.medium,
+  },
+  contentContainer: {
+    backgroundColor: COLORS.surface,
+    borderRadius: SPACING.md,
     shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
     elevation: 3,
+  },
+  rankingContent: {
     flexDirection: "row",
-    justifyContent: "space-between", // This pushes content and button apart
-    alignItems: "center", // Vertically aligns items in the card
+    alignItems: "center",
+    paddingVertical: SPACING.lg,
+    paddingHorizontal: SPACING.lg,
   },
-  rankingItemContent: {
-    flex: 1, // Allows text content to take up available space
-    marginRight: SPACING.sm, // Add a small margin so text doesn't touch the button
+  leftSection: {
+    marginRight: SPACING.lg,
   },
-  rankingCity: {
+  scoreCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    borderWidth: 3,
+    backgroundColor: COLORS.background,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  scoreText: {
+    fontSize: TYPOGRAPHY.sizes.xl,
+    fontWeight: FONT_WEIGHTS.bold,
+  },
+  middleSection: {
+    flex: 1,
+  },
+  cityName: {
     ...TYPOGRAPHY.bodyMedium,
     fontSize: TYPOGRAPHY.sizes.lg,
     color: COLORS.textPrimary,
     fontWeight: FONT_WEIGHTS.semiBold,
     marginBottom: SPACING.xs,
   },
-  rankingScore: {
-    ...TYPOGRAPHY.bodyRegular,
-    fontSize: TYPOGRAPHY.sizes.md,
-    color: COLORS.textSecondary,
-  },
-  deleteButton: {
-    padding: SPACING.sm, // Hit area for the icon
-    // No background color for a more subtle icon-only button
-    // borderRadius: SPACING.pill, // If you wanted a circular background
-    marginLeft: SPACING.xs, // Keep some space from the content
-    justifyContent: "center",
+  countryContainer: {
+    flexDirection: "row",
     alignItems: "center",
   },
-  // deleteButtonText is not used if we only have an icon, but kept for consistency
-  // deleteButtonText: {
-  //   color: COLORS.error,
-  //   fontSize: TYPOGRAPHY.sizes.sm,
-  //   fontWeight: FONT_WEIGHTS.bold,
-  // },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: SPACING.xl,
-    marginTop: SPACING["3xl"],
-  },
-  emptyText: {
+  countryText: {
     ...TYPOGRAPHY.bodyRegular,
-    fontSize: TYPOGRAPHY.sizes.lg,
+    fontSize: TYPOGRAPHY.sizes.sm,
     color: COLORS.textMuted,
-    textAlign: "center",
-    marginBottom: SPACING.sm,
+    marginLeft: SPACING.xs,
   },
-  emptySubText: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.textMuted,
-    textAlign: "center",
-    opacity: 0.8,
-  },
-  loader: {
-    marginVertical: SPACING.xl,
-  },
-  errorText: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.error,
-    textAlign: "center",
-    padding: SPACING.md,
+  rightSection: {
+    marginLeft: SPACING.md,
   },
 });

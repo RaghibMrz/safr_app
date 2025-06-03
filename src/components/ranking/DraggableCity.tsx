@@ -1,15 +1,19 @@
-// src/components/DraggableCity.tsx
+// src/components/ranking/DraggableCity.tsx
 import { Ionicons } from "@expo/vector-icons";
-import { Animated, Text, TouchableOpacity, View } from "react-native";
+import {
+  Animated,
+  Text,
+  TouchableOpacity,
+  View,
+  StyleSheet,
+} from "react-native";
 
-import { styles } from "../../screens/tabs/addRanking.styles";
 import {
   CITY_ICON_SIZE,
   REMOVE_BUTTON_OFFSET,
   WIDGET_CITY_NAME_MAX_LENGTH,
-  WIDGET_REMOVE_BUTTON_SIZE,
 } from "../../screens/tabs/addRanking.constants";
-import { COLORS } from "../../theme";
+import { COLORS, SPACING, TYPOGRAPHY, FONT_WEIGHTS } from "../../theme";
 import { DraggableCityProps } from "@/src/types/city";
 
 export const DraggableCity: React.FC<DraggableCityProps> = ({
@@ -19,9 +23,17 @@ export const DraggableCity: React.FC<DraggableCityProps> = ({
   panResponder,
   onRemove,
 }) => {
+  const getScoreColor = (score: number) => {
+    if (score >= 80) return "#4CAF50";
+    if (score >= 60) return "#FFC107";
+    if (score >= 40) return "#FF9800";
+    return "#F44336";
+  };
+
   return (
     <Animated.View
       style={[
+        styles.container,
         {
           position: "absolute",
           transform: position
@@ -35,14 +47,30 @@ export const DraggableCity: React.FC<DraggableCityProps> = ({
       ]}
     >
       <View
-        style={[styles.cityIcon, { backgroundColor: city.color }]}
+        style={[
+          styles.cityIcon,
+          {
+            backgroundColor: city.color,
+            transform: isDragging ? [{ scale: 1.1 }] : [{ scale: 1 }],
+            borderWidth: city.score > 0 ? 3 : 0,
+            borderColor:
+              city.score > 0 ? getScoreColor(city.score) : "transparent",
+          },
+        ]}
         {...panResponder}
       >
         <Text style={styles.cityIconText} numberOfLines={1}>
           {city.name.substring(0, WIDGET_CITY_NAME_MAX_LENGTH).toUpperCase()}
         </Text>
         {city.score > 0 && (
-          <Text style={styles.cityScoreText}>{city.score}</Text>
+          <View
+            style={[
+              styles.scoreContainer,
+              { backgroundColor: getScoreColor(city.score) },
+            ]}
+          >
+            <Text style={styles.cityScoreText}>{city.score}</Text>
+          </View>
         )}
       </View>
 
@@ -62,12 +90,59 @@ export const DraggableCity: React.FC<DraggableCityProps> = ({
         onPress={() => onRemove(city.id)}
         hitSlop={{ top: 5, bottom: 5, left: 5, right: 5 }}
       >
-        <Ionicons
-          name="close-circle"
-          size={WIDGET_REMOVE_BUTTON_SIZE}
-          color={COLORS.white}
-        />
+        <Ionicons name="close-circle" size={20} color={COLORS.white} />
       </TouchableOpacity>
     </Animated.View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    // Container styles handled inline
+  },
+  cityIcon: {
+    width: CITY_ICON_SIZE,
+    height: CITY_ICON_SIZE,
+    borderRadius: CITY_ICON_SIZE / 2,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
+    position: "absolute",
+    left: 0,
+    top: 0,
+  },
+  cityIconText: {
+    ...TYPOGRAPHY.bodyMedium,
+    fontSize: TYPOGRAPHY.sizes.md,
+    color: COLORS.white,
+    fontWeight: FONT_WEIGHTS.bold,
+  },
+  scoreContainer: {
+    position: "absolute",
+    bottom: -5,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    borderRadius: 10,
+    minWidth: 30,
+    alignItems: "center",
+  },
+  cityScoreText: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.white,
+    fontSize: TYPOGRAPHY.sizes.xs,
+    fontWeight: FONT_WEIGHTS.bold,
+  },
+  removeCityButton: {
+    backgroundColor: COLORS.error,
+    borderRadius: 10,
+    shadowColor: COLORS.error,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+});

@@ -97,6 +97,12 @@ export const TYPOGRAPHY = {
     lineHeight: LINE_HEIGHTS.h3,
     fontWeight: FONT_WEIGHTS.bold,
   },
+  h4: {
+    fontFamily: FONT_FAMILY_BOLD,
+    fontSize: FONT_SIZES.xxl,
+    lineHeight: LINE_HEIGHTS.xxl,
+    fontWeight: FONT_WEIGHTS.bold,
+  },
   bodyRegular: {
     fontFamily: FONT_FAMILY_REGULAR,
     fontSize: FONT_SIZES.md,

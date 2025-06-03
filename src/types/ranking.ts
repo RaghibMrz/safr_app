@@ -5,3 +5,9 @@ export interface UserCityRanking {
   personal_score: number;
   city: City;
 }
+
+export interface SwipeableRankingItemProps {
+  item: UserCityRanking;
+  onDelete: (item: UserCityRanking) => void;
+  index: number;
+}

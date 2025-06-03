@@ -7,6 +7,7 @@ import {
   Alert,
   FlatList,
   Platform,
+  RefreshControl,
   SafeAreaView,
   StatusBar,
   Text,
@@ -16,9 +17,11 @@ import {
 
 import apiService from "../../src/api";
 import { AuthContext } from "../../src/context/AuthContext";
+import { SwipeableRankingItem } from "../../src/components/home/SwipeableRankingItem";
 import { styles } from "../../src/screens/tabs/home.styles";
-import { COLORS, SPACING, TYPOGRAPHY } from "../../src/theme";
-import { UserCityRanking } from "@/src/types/dtos";
+import { COLORS, FONT_SIZES, SPACING } from "../../src/theme";
+import { City } from "@/src/types/city";
+import { UserCityRanking } from "@/src/types/ranking";
 
 export default function HomeScreen() {
   const authContext = useContext(AuthContext);
@@ -27,7 +30,7 @@ export default function HomeScreen() {
   const [rankings, setRankings] = useState<UserCityRanking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
-  const [isDeleting, setIsDeleting] = useState<number | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   if (!authContext) {
     console.error("AuthContext is not available in HomeScreen.");
@@ -49,19 +52,18 @@ export default function HomeScreen() {
       setIsLoading(false);
       return;
     }
-    setIsLoading(true);
     setError("");
     try {
       const data = await apiService.getUserRankings();
       setRankings(data);
     } catch (e: any) {
-      // Don't show error if it's an auth error (API service will handle logout)
       if (!e.message?.includes("Authentication expired")) {
         setError(e.message || "Failed to fetch your ranked cities.");
       }
       setRankings([]);
     } finally {
       setIsLoading(false);
+      setRefreshing(false);
     }
   }, [userInfo]);
 
@@ -71,164 +73,216 @@ export default function HomeScreen() {
     }, [fetchRankings])
   );
 
-  const handleDeleteRanking = async (rankingItem: UserCityRanking) => {
-    Alert.alert(
-      "Delete Ranking",
-      `Are you sure you want to delete your ranking for ${rankingItem.city.name}?`,
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            setIsDeleting(rankingItem.id);
-            setError("");
-            try {
-              await apiService.deleteRanking(rankingItem.city.id);
-              await fetchRankings();
-              Alert.alert(
-                "Deleted!",
-                `${rankingItem.city.name} ranking has been removed.`
-              );
-            } catch (e: any) {
-              // Don't show error if it's an auth error
-              if (!e.message?.includes("Authentication expired")) {
-                setError(
-                  e.message ||
-                    `Failed to delete ranking for ${rankingItem.city.name}.`
-                );
-                Alert.alert(
-                  "Error",
-                  e.message ||
-                    `Failed to delete ranking for ${rankingItem.city.name}.`
-                );
-              }
-            } finally {
-              setIsDeleting(null);
-            }
-          },
-        },
-      ]
-    );
-  };
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchRankings();
+  }, [fetchRankings]);
 
-  const renderRankingItem = ({ item }: { item: UserCityRanking }) => (
-    <View style={styles.rankingItemCard}>
-      <View style={styles.rankingItemContent}>
-        <Text style={styles.rankingCity}>
-          {item.city.name}, {item.city.country}
-        </Text>
-        <Text style={styles.rankingScore}>
-          Your Score: {item.personal_score.toFixed(1)}
-        </Text>
-      </View>
-      {isDeleting === item.id ? (
-        <ActivityIndicator
-          size="small"
-          color={COLORS.error}
-          style={styles.deleteButton}
-        />
-      ) : (
-        <TouchableOpacity
-          style={styles.deleteButton}
-          onPress={() => handleDeleteRanking(item)}
-          activeOpacity={0.7}
-        >
-          <Ionicons
-            name="remove-circle"
-            size={TYPOGRAPHY.sizes.xxl}
-            color={COLORS.error}
-          />
-        </TouchableOpacity>
-      )}
-    </View>
-  );
+  const handleDeleteRanking = async (rankingItem: UserCityRanking) => {
+    try {
+      await apiService.deleteRanking(rankingItem.city.id);
+      // Optimistic update
+      setRankings((prev) => prev.filter((r) => r.id !== rankingItem.id));
+    } catch (e: any) {
+      if (!e.message?.includes("Authentication expired")) {
+        Alert.alert(
+          "Error",
+          `Failed to delete ranking for ${rankingItem.city.name}.`
+        );
+        // Refetch to restore correct state
+        fetchRankings();
+      }
+    }
+  };
 
   const handleNavigateToAddRanking = () => {
     router.push("/(tabs)/addRanking");
   };
 
-  return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar
-        barStyle={Platform.OS === "ios" ? "dark-content" : "dark-content"}
-        backgroundColor={COLORS.background}
-      />
-      <View style={styles.screenContainer}>
-        <View style={styles.header}>
-          <Text
-            style={styles.headerTitle}
-            numberOfLines={1}
-            ellipsizeMode="tail"
-          >
-            welcome, {userInfo?.username || "User"}.
-          </Text>
-          <TouchableOpacity
-            style={styles.buttonOutline}
-            onPress={logout}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.buttonTextOutline}>Logout</Text>
-          </TouchableOpacity>
-        </View>
+  const handleLogout = async () => {
+    Alert.alert("Logout", "Are you sure you want to logout?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Logout",
+        style: "destructive",
+        onPress: logout,
+      },
+    ]);
+  };
 
-        <TouchableOpacity
-          style={styles.buttonPrimary}
-          onPress={handleNavigateToAddRanking}
-          activeOpacity={0.8}
+  // Calculate statistics
+  const averageScore =
+    rankings.length > 0
+      ? rankings.reduce((sum, r) => sum + r.personal_score, 0) / rankings.length
+      : 0;
+  const highestRated = rankings.reduce(
+    (max, r) => (r.personal_score > (max?.personal_score || 0) ? r : max),
+    null as UserCityRanking | null
+  );
+
+  const renderHeader = () => (
+    <View>
+      {/* User Header */}
+      <View style={styles.headerContainer}>
+        <View
+          style={[styles.gradientHeader, { backgroundColor: COLORS.primary }]}
         >
-          <Text style={styles.buttonTextPrimary}>Rank a City / Update</Text>
-        </TouchableOpacity>
-
-        {isLoading && rankings.length === 0 ? (
-          <ActivityIndicator
-            size="large"
-            color={COLORS.primary}
-            style={styles.loader}
-          />
-        ) : error && rankings.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.errorText}>{error}</Text>
+          <View style={styles.headerContent}>
+            <View style={styles.userInfo}>
+              <Text style={styles.greetingText}>Welcome back,</Text>
+              <Text style={styles.usernameText}>
+                {userInfo?.username || "Traveler"}
+              </Text>
+            </View>
             <TouchableOpacity
-              style={styles.buttonOutline}
-              onPress={fetchRankings}
+              style={styles.logoutButton}
+              onPress={handleLogout}
+              activeOpacity={0.7}
             >
-              <Text style={styles.buttonTextOutline}>Try Again</Text>
+              <Ionicons name="log-out-outline" size={24} color={COLORS.white} />
             </TouchableOpacity>
           </View>
-        ) : !isLoading && rankings.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>
-              You haven't ranked any cities yet.
-            </Text>
-            <Text style={styles.emptySubText}>
-              Tap the button above to add your first ranking!
-            </Text>
+        </View>
+      </View>
+
+      {/* Stats Cards */}
+      {rankings.length > 0 && (
+        <View style={styles.statsContainer}>
+          <View style={styles.statCard}>
+            <Ionicons
+              name="flag"
+              size={FONT_SIZES.xxl}
+              color={COLORS.primary}
+            />
+            <Text style={styles.statNumber}>{rankings.length}</Text>
+            <Text style={styles.statLabel}>Cities Ranked</Text>
           </View>
-        ) : (
-          <FlatList
-            data={rankings}
-            renderItem={renderRankingItem}
-            keyExtractor={(item) => item.id.toString()}
-            style={styles.list}
-            ListHeaderComponent={
-              <Text style={styles.listHeader}>Your Ranked Cities</Text>
-            }
-            refreshing={isLoading}
-            onRefresh={fetchRankings}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: SPACING.xl }}
-            ListFooterComponent={
-              error && rankings.length > 0 ? (
-                <Text style={styles.errorText}>{error}</Text>
-              ) : null
-            }
+
+          <View style={styles.statCard}>
+            <Ionicons
+              name="stats-chart"
+              size={FONT_SIZES.xxl}
+              color={COLORS.primary}
+            />
+            <Text style={styles.statNumber}>{averageScore.toFixed(0)}</Text>
+            <Text style={styles.statLabel}>Average Score</Text>
+          </View>
+
+          {/* todo: change this to store the average objective score instead */}
+          {highestRated && (
+            <View style={styles.statCard}>
+              <Ionicons
+                name="trophy"
+                size={FONT_SIZES.xxl}
+                color={COLORS.primary}
+              />
+              <Text style={styles.statText} numberOfLines={1}>
+                {highestRated.city.name}
+              </Text>
+              <Text style={styles.statLabel}>Top Rated</Text>
+            </View>
+          )}
+        </View>
+      )}
+
+      {/* Add Ranking Button */}
+      <View style={styles.addButtonContainer}>
+        <TouchableOpacity
+          style={styles.addRankingButton}
+          onPress={handleNavigateToAddRanking}
+          activeOpacity={0.9}
+        >
+          <View
+            style={[styles.gradientButton, { backgroundColor: COLORS.primary }]}
+          >
+            <Ionicons
+              name="add-circle-outline"
+              size={24}
+              color={COLORS.white}
+            />
+            <Text style={styles.addButtonText}>Rank a New City</Text>
+          </View>
+        </TouchableOpacity>
+      </View>
+
+      {rankings.length > 0 && (
+        <Text style={styles.sectionTitle}>Your Rankings</Text>
+      )}
+    </View>
+  );
+
+  const renderEmpty = () => {
+    if (isLoading) {
+      return (
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+      );
+    }
+
+    if (error) {
+      return (
+        <View style={styles.emptyContainer}>
+          <Ionicons
+            name="alert-circle-outline"
+            size={64}
+            color={COLORS.error}
+          />
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={fetchRankings}>
+            <Text style={styles.retryButtonText}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.emptyContainer}>
+        <Ionicons name="map-outline" size={80} color={COLORS.textMuted} />
+        <Text style={styles.emptyTitle}>No Cities Ranked Yet</Text>
+        <Text style={styles.emptySubtitle}>
+          Start exploring and ranking cities you've visited or want to visit!
+        </Text>
+        <TouchableOpacity
+          style={styles.emptyActionButton}
+          onPress={handleNavigateToAddRanking}
+        >
+          <Text style={styles.emptyActionText}>Add Your First City</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
+
+      <FlatList
+        data={rankings}
+        renderItem={({ item, index }) => (
+          <SwipeableRankingItem
+            item={item}
+            index={index}
+            onDelete={handleDeleteRanking}
           />
         )}
-      </View>
+        keyExtractor={(item) => item.id.toString()}
+        ListHeaderComponent={renderHeader}
+        ListEmptyComponent={renderEmpty}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[COLORS.primary]}
+            tintColor={COLORS.primary}
+          />
+        }
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.listContent,
+          rankings.length === 0 && styles.emptyListContent,
+        ]}
+      />
     </SafeAreaView>
   );
 }

@@ -2,7 +2,7 @@ export const COLORS = {
   // --- Core Palette ---
   background: "#F9F6F2", // A very light, warm, and sophisticated off-white/cream.
   surface: "#FFFFFF", // Pure white for cards, modals, and key UI elements for contrast.
-  primary: "#795548", // A deep, warm, earthy brown for primary actions or accents. (Replaces previous accent)
+  primary: "#795548", // A deep, warm, earthy brown for primary actions or accents.
   secondary: "#A1887F", // A softer, muted brown, complementary to primary.
 
   // --- Text ---
