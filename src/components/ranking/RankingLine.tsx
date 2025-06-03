@@ -1,12 +1,12 @@
 // src/components/RankingLine.tsx
 import React, { forwardRef } from "react";
-import { Text, View } from "react-native";
+import { LayoutChangeEvent, Text, View } from "react-native";
 
 import { styles } from "../../screens/tabs/addRanking.styles";
 import { SCORE_MARKERS } from "../../screens/tabs/addRanking.constants";
 
 interface RankingLineProps {
-  onLayout: (event: any) => void;
+  onLayout: (event: LayoutChangeEvent) => void;
 }
 
 export const RankingLine = forwardRef<View, RankingLineProps>(

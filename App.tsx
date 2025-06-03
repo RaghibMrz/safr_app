@@ -1,6 +1,5 @@
 // safr_app/App.tsx
 import { ExpoRoot } from "expo-router";
-import React from "react";
 import "react-native-gesture-handler"; // Still good to have at the very top
 
 export default function App() {

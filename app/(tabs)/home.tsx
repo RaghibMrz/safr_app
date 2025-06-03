@@ -18,17 +18,12 @@ import apiService from "../../src/api";
 import { AuthContext } from "../../src/context/AuthContext";
 import { styles } from "../../src/screens/tabs/home.styles"; // Ensure this path is correct
 import { COLORS, SPACING, TYPOGRAPHY } from "../../src/theme"; // Added SPACING for icon button
-
-interface City {
-  id: number;
-  name: string;
-  country: string;
-}
+import { City } from "@/src/types/city";
 
 interface UserCityRanking {
-  id: number; // ID of the ranking entry itself
+  id: number;
   personal_score: number;
-  city: City; // Contains city.id which we'll use for deletion
+  city: City;
 }
 
 export default function HomeScreen() {

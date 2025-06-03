@@ -109,6 +109,7 @@ export const styles = StyleSheet.create({
   removeCityButton: {
     backgroundColor: COLORS.error,
     borderRadius: 10,
+    size: 20,
   },
 
   // Ranking Container - Horizontal Line

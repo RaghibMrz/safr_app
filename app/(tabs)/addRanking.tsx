@@ -45,6 +45,7 @@ import {
 } from "../../src/screens/tabs/addRanking.constants";
 import { styles } from "../../src/screens/tabs/addRanking.styles";
 import { COLORS, SPACING } from "../../src/theme";
+import { City } from "@/src/types/city";
 
 const { height: screenHeight } = Dimensions.get("window");
 
@@ -52,12 +53,6 @@ const { height: screenHeight } = Dimensions.get("window");
 const INITIAL_SPACING = SPACING.md;
 const ICONS_PER_ROW = 5; // Number of city icons to display per row in the unranked area
 const MAX_UNRANKED_CITIES = 10; // New constant: Maximum number of unranked cities allowed at one time
-
-interface City {
-  id: number;
-  name: string;
-  country: string;
-}
 
 interface DraggableCityData extends City {
   score: number;
@@ -215,50 +210,42 @@ export default function AddRankingScreen() {
    */
   const recalculateUnrankedPositions = useCallback(
     (currentCities: DraggableCityData[]) => {
-      // Filter only the unranked cities to re-position them in the grid
-      const unrankedCities = currentCities.filter((c) => c.score === 0);
-      let newSelectedCities = [...currentCities]; // Create a mutable copy to update positions
+      let newSelectedCities = [...currentCities];
+      let unrankedCount = 0;
 
-      unrankedCities.forEach((city, index) => {
-        // Calculate new grid position for each unranked city
-        const row = Math.floor(index / ICONS_PER_ROW);
-        const col = index % ICONS_PER_ROW;
-        const newX = col * (CITY_ICON_SIZE + INITIAL_SPACING);
-        const newY = row * (CITY_ICON_SIZE + INITIAL_SPACING);
+      newSelectedCities.forEach((city, index) => {
+        if (city.score === 0) {
+          const row = Math.floor(unrankedCount / ICONS_PER_ROW);
+          const col = unrankedCount % ICONS_PER_ROW;
+          const newX = col * (CITY_ICON_SIZE + INITIAL_SPACING);
+          const newY = row * (CITY_ICON_SIZE + INITIAL_SPACING);
 
-        // Find the city in the full list to update its position in the state
-        const cityIndexInFullList = newSelectedCities.findIndex(
-          (c) => c.id === city.id
-        );
-        if (cityIndexInFullList !== -1) {
-          newSelectedCities[cityIndexInFullList] = {
-            ...newSelectedCities[cityIndexInFullList],
-            position: { x: newX, y: newY }, // Update the position in the state
+          newSelectedCities[index] = {
+            ...city,
+            position: { x: newX, y: newY },
           };
-          // Animate the city to its new position if its Animated.ValueXY exists
+
           if (cityPositions.current[city.id]) {
             Animated.spring(cityPositions.current[city.id], {
               toValue: { x: newX, y: newY },
               useNativeDriver: false,
-              friction: 7, // Smooth animation for rearrangement
+              friction: 7,
             }).start();
           }
+          unrankedCount++;
         }
       });
-      return newSelectedCities; // Return the list with updated positions
+      return newSelectedCities;
     },
     []
-  ); // No dependencies as it uses constants and refs directly
+  );
 
-  // Creates a PanResponder for each draggable city
   const createPanResponder = useCallback(
     (cityId: number) => {
       return PanResponder.create({
-        // Allow the PanResponder to claim the touch
         onStartShouldSetPanResponder: () => true,
         onMoveShouldSetPanResponder: () => true,
 
-        // When dragging starts
         onPanResponderGrant: () => {
           setCurrentDraggingId(cityId); // Set the current dragging city
           const city = selectedCities.find((c) => c.id === cityId);
@@ -353,6 +340,16 @@ export default function AddRankingScreen() {
     [selectedCities, rankingLineLayout, recalculateUnrankedPositions] // Add recalculateUnrankedPositions as a dependency
   );
 
+  /**
+   * Helper function to close the search modal and clear search-related state.
+   * This centralizes duplicated logic for better maintainability.
+   */
+  const resetSearchModalState = useCallback(() => {
+    setShowSearchModal(false);
+    setSearchTerm("");
+    setDebouncedSearchTerm("");
+  }, []);
+
   // Handles selecting a city from the search results
   const handleSelectCity = useCallback(
     (city: City) => {
@@ -361,6 +358,8 @@ export default function AddRankingScreen() {
           "Already Selected",
           `${city.name} is already in your ranking list.`
         );
+        // Use the new helper function
+        resetSearchModalState();
         return;
       }
 
@@ -373,20 +372,16 @@ export default function AddRankingScreen() {
           "Limit Reached",
           `You can only have up to ${MAX_UNRANKED_CITIES} unranked cities at a time. Please rank or remove existing cities.`
         );
-        setShowSearchModal(false); // Close modal
-        setSearchTerm(""); // Clear search term
-        setDebouncedSearchTerm("");
-        return; // Prevent adding the new city
+        resetSearchModalState();
+        return;
       }
 
-      // Calculate initial position based on the current number of unranked cities
-      const index = unrankedCities.length; // New city will be at this index among unranked
+      const index = unrankedCities.length;
       const row = Math.floor(index / ICONS_PER_ROW);
       const col = index % ICONS_PER_ROW;
       const initialX = col * (CITY_ICON_SIZE + INITIAL_SPACING);
       const initialY = row * (CITY_ICON_SIZE + INITIAL_SPACING);
 
-      // Initialize Animated.ValueXY for the new city
       cityPositions.current[city.id] = new Animated.ValueXY({
         x: initialX,
         y: initialY,
@@ -394,18 +389,16 @@ export default function AddRankingScreen() {
 
       const newCity: DraggableCityData = {
         ...city,
-        score: 0, // Initially unranked
+        score: 0,
         color: CITY_COLORS[colorIndex.current % CITY_COLORS.length],
-        position: { x: initialX, y: initialY }, // Store initial position for snap-back
+        position: { x: initialX, y: initialY },
       };
 
-      colorIndex.current += 1; // Cycle through colors
-      setSelectedCities((prev) => [...prev, newCity]); // Add new city to state
-      setShowSearchModal(false); // Close modal
-      setSearchTerm(""); // Clear search term
-      setDebouncedSearchTerm("");
+      colorIndex.current += 1;
+      setSelectedCities((prev) => [...prev, newCity]);
+      resetSearchModalState();
     },
-    [selectedCities] // Dependency: selectedCities to get accurate length for initial position
+    [selectedCities, resetSearchModalState]
   );
 
   // Handles removing a city from the selected list
@@ -477,16 +470,12 @@ export default function AddRankingScreen() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [selectedCities, router]); // Dependencies for the callback
+  }, [selectedCities, router]);
 
-  // Handles closing the search modal
   const handleModalClose = useCallback(() => {
-    setShowSearchModal(false);
-    setSearchTerm("");
-    setDebouncedSearchTerm("");
-  }, []);
+    resetSearchModalState();
+  }, [resetSearchModalState]);
 
-  // Handles layout measurement of the ranking line
   const handleRankingLineLayout = useCallback(() => {
     rankingLineRef.current?.measureInWindow((x, y, width, height) => {
       setRankingLineLayout({ x, y, width, height });

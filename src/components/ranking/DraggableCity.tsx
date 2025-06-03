@@ -1,33 +1,15 @@
 // src/components/DraggableCity.tsx
 import { Ionicons } from "@expo/vector-icons";
-import React from "react";
-import {
-  Animated,
-  PanResponder,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Animated, Text, TouchableOpacity, View } from "react-native";
 
 import { styles } from "../../screens/tabs/addRanking.styles";
 import {
   CITY_ICON_SIZE,
   REMOVE_BUTTON_OFFSET,
+  WIDGET_CITY_NAME_MAX_LENGTH,
 } from "../../screens/tabs/addRanking.constants";
 import { COLORS } from "../../theme";
-
-interface DraggableCityProps {
-  city: {
-    id: number;
-    name: string;
-    color: string;
-    score: number;
-  };
-  position: Animated.ValueXY;
-  isDragging: boolean;
-  panResponder: ReturnType<typeof PanResponder.create>["panHandlers"];
-  onRemove: (cityId: number) => void;
-}
+import { DraggableCityProps } from "@/src/types/city";
 
 export const DraggableCity: React.FC<DraggableCityProps> = ({
   city,
@@ -56,7 +38,7 @@ export const DraggableCity: React.FC<DraggableCityProps> = ({
         {...panResponder}
       >
         <Text style={styles.cityIconText} numberOfLines={1}>
-          {city.name.substring(0, 3).toUpperCase()}
+          {city.name.substring(0, WIDGET_CITY_NAME_MAX_LENGTH).toUpperCase()}
         </Text>
         {city.score > 0 && (
           <Text style={styles.cityScoreText}>{city.score}</Text>
@@ -79,7 +61,11 @@ export const DraggableCity: React.FC<DraggableCityProps> = ({
         onPress={() => onRemove(city.id)}
         hitSlop={{ top: 5, bottom: 5, left: 5, right: 5 }}
       >
-        <Ionicons name="close-circle" size={20} color={COLORS.white} />
+        <Ionicons
+          name="close-circle"
+          size={styles.removeCityButton.size}
+          color={COLORS.white}
+        />
       </TouchableOpacity>
     </Animated.View>
   );

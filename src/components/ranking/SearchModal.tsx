@@ -13,12 +13,7 @@ import {
 
 import { styles } from "../../screens/tabs/addRanking.styles";
 import { COLORS } from "../../theme";
-
-interface City {
-  id: number;
-  name: string;
-  country: string;
-}
+import { City } from "@/src/types/city";
 
 interface SearchModalProps {
   visible: boolean;

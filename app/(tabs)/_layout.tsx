@@ -1,7 +1,6 @@
 // app/(tabs)/_layout.tsx
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
-import React from "react";
 import { Platform, StyleSheet, View } from "react-native";
 
 import { COLORS, FONT_WEIGHTS, SPACING, TYPOGRAPHY } from "../../src/theme";

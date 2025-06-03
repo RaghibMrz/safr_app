@@ -1,5 +1,11 @@
 // api.ts
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import {
+  CityDisplay,
+  TokenResponse,
+  UserCityRanking,
+  UserInfo,
+} from "../types/dtos";
 
 // --- Configuration ---
 // IMPORTANT: Replace with your actual backend URL.
@@ -13,43 +19,6 @@ const API_BASE_URL = "http://192.168.1.42:8000";
 const getAuthToken = async (): Promise<string | null> => {
   return await AsyncStorage.getItem("userToken");
 };
-
-// --- Define expected response types (mirroring FastAPI Pydantic schemas) ---
-interface UserInfo {
-  // Matches UserDisplay schema from backend
-  id: number;
-  username: string;
-  email: string;
-  created_at: string; // Or Date
-}
-
-interface TokenResponse {
-  // Matches Token schema from backend
-  access_token: string;
-  token_type: string;
-}
-
-interface City {
-  // Matches CityDisplay schema from backend
-  id: number;
-  name: string;
-  country: string;
-  latitude?: number | null;
-  longitude?: number | null;
-  geoname_id?: string | null;
-}
-
-interface UserCityRanking {
-  // Matches UserCityRankingDisplay schema from backend
-  id: int;
-  user_id: int;
-  city_id: int;
-  personal_score: number;
-  objective_score?: number | null;
-  created_at: string; // Or Date
-  updated_at: string; // Or Date
-  city: City;
-}
 
 // --- API Service Object ---
 const apiService = {
@@ -137,7 +106,7 @@ const apiService = {
   getCities: async (
     skip: number = 0,
     limit: number = 15000
-  ): Promise<City[]> => {
+  ): Promise<CityDisplay[]> => {
     const response = await fetch(
       `${API_BASE_URL}/cities/?skip=${skip}&limit=${limit}`,
       {
@@ -154,7 +123,7 @@ const apiService = {
         .catch(() => ({ detail: "Failed to fetch cities" }));
       throw new Error(errorData.detail || "Failed to fetch cities");
     }
-    return (await response.json()) as City[];
+    return (await response.json()) as CityDisplay[];
   },
 
   // --- Rankings Endpoints ---
