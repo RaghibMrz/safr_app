@@ -43,9 +43,10 @@ export const styles = StyleSheet.create({
     marginBottom: SPACING.xl,
   },
   modernHeaderTitle: {
-    ...TYPOGRAPHY.h2,
+    ...TYPOGRAPHY.h3,
     color: COLORS.white,
     fontWeight: FONT_WEIGHTS.bold,
+    marginTop: SPACING.xl,
     marginBottom: SPACING.xs,
   },
   modernHeaderSubtitle: {
