@@ -1,4 +1,4 @@
-// api.ts
+// src/api/index.ts
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   CityDisplay,
@@ -8,12 +8,33 @@ import {
 } from "../types/dtos";
 
 // --- Configuration ---
-// IMPORTANT: Replace with your actual backend URL.
-// - For Android Emulator (if backend is on localhost): 'http://10.0.2.2:8000'
-// - For iOS Simulator (if backend is on localhost): 'http://127.0.0.1:8000' or 'http://localhost:8000'
-// - If backend is hosted, use its public URL.
-// - If running on a physical device, use your computer's network IP address.
 const API_BASE_URL = "http://192.168.1.42:8000";
+
+// Store the logout callback
+let authLogoutCallback: (() => Promise<void>) | null = null;
+
+// Function to set the logout callback
+export const setAuthLogoutCallback = (callback: () => Promise<void>) => {
+  authLogoutCallback = callback;
+};
+
+// Helper to handle auth errors
+const handleAuthError = async (response: Response, errorData: any) => {
+  if (response.status === 401) {
+    // Unauthorized - token is invalid/expired
+    console.log("401 Unauthorized - logging out user");
+    await AsyncStorage.removeItem("userToken");
+    await AsyncStorage.removeItem("userInfo");
+
+    // Trigger logout in the UI
+    if (authLogoutCallback) {
+      await authLogoutCallback();
+    }
+
+    throw new Error("Authentication expired. Please login again.");
+  }
+  throw new Error(errorData.detail || "Request failed");
+};
 
 // --- Helper to get the auth token ---
 const getAuthToken = async (): Promise<string | null> => {
@@ -90,14 +111,7 @@ const apiService = {
       const errorData = await response
         .json()
         .catch(() => ({ detail: "Failed to fetch user info" }));
-      if (response.status === 401) {
-        // Unauthorized, token might be invalid/expired
-        // Consider triggering a logout or token refresh mechanism here
-        // For now, just remove potentially bad stored data
-        await AsyncStorage.removeItem("userToken");
-        await AsyncStorage.removeItem("userInfo");
-      }
-      throw new Error(errorData.detail || "Failed to fetch user info");
+      await handleAuthError(response, errorData);
     }
     return (await response.json()) as UserInfo;
   },
@@ -145,7 +159,7 @@ const apiService = {
       const errorData = await response
         .json()
         .catch(() => ({ detail: "Failed to fetch rankings" }));
-      throw new Error(errorData.detail || "Failed to fetch rankings");
+      await handleAuthError(response, errorData);
     }
     return (await response.json()) as UserCityRanking[];
   },
@@ -173,7 +187,7 @@ const apiService = {
       const errorData = await response
         .json()
         .catch(() => ({ detail: "Failed to update ranking" }));
-      throw new Error(errorData.detail || "Failed to add/update ranking");
+      await handleAuthError(response, errorData);
     }
     return (await response.json()) as UserCityRanking;
   },
@@ -188,18 +202,16 @@ const apiService = {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${authToken}`,
-        Accept: "application/json", // Even for 204, good to specify
+        Accept: "application/json",
       },
     });
 
     if (!response.ok && response.status !== 204) {
-      // 204 is a success for DELETE
       const errorData = await response
         .json()
         .catch(() => ({ detail: "Failed to delete ranking" }));
-      throw new Error(errorData.detail || "Failed to delete ranking");
+      await handleAuthError(response, errorData);
     }
-    // No content to parse for 204 response
   },
 };
 

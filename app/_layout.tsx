@@ -10,15 +10,22 @@ import {
   StatusBar,
   Platform,
 } from "react-native";
-import { GestureHandlerRootView } from "react-native-gesture-handler"; // Import GestureHandlerRootView
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import { AuthProvider, AuthContext } from "../src/context/AuthContext";
 import { COLORS, TYPOGRAPHY, SPACING } from "../src/theme";
+import { setAuthLogoutCallback } from "../src/api";
 
 function InitialLayout() {
   const authContext = useContext(AuthContext);
   const segments = useSegments();
   const router = useRouter();
+
+  useEffect(() => {
+    if (authContext?.logout) {
+      setAuthLogoutCallback(authContext.logout);
+    }
+  }, [authContext?.logout]);
 
   useEffect(() => {
     if (authContext?.isLoading) {
@@ -40,9 +47,6 @@ function InitialLayout() {
 
   if (authContext?.isLoading) {
     return (
-      // SafeAreaView for loading state should also be inside GestureHandlerRootView
-      // but for simplicity, we'll ensure the main content stack is wrapped.
-      // The loading screen itself doesn't use gestures.
       <SafeAreaView style={styles.safeArea}>
         <StatusBar
           barStyle={Platform.OS === "ios" ? "dark-content" : "dark-content"}

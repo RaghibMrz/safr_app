@@ -1,5 +1,5 @@
 // app/(tabs)/home.tsx
-import { Ionicons } from "@expo/vector-icons"; // Import Ionicons
+import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useContext, useState } from "react";
 import {
@@ -16,15 +16,9 @@ import {
 
 import apiService from "../../src/api";
 import { AuthContext } from "../../src/context/AuthContext";
-import { styles } from "../../src/screens/tabs/home.styles"; // Ensure this path is correct
-import { COLORS, SPACING, TYPOGRAPHY } from "../../src/theme"; // Added SPACING for icon button
-import { City } from "@/src/types/city";
-
-interface UserCityRanking {
-  id: number;
-  personal_score: number;
-  city: City;
-}
+import { styles } from "../../src/screens/tabs/home.styles";
+import { COLORS, SPACING, TYPOGRAPHY } from "../../src/theme";
+import { UserCityRanking } from "@/src/types/dtos";
 
 export default function HomeScreen() {
   const authContext = useContext(AuthContext);
@@ -33,7 +27,7 @@ export default function HomeScreen() {
   const [rankings, setRankings] = useState<UserCityRanking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
-  const [isDeleting, setIsDeleting] = useState<number | null>(null); // Store ID of item being deleted
+  const [isDeleting, setIsDeleting] = useState<number | null>(null);
 
   if (!authContext) {
     console.error("AuthContext is not available in HomeScreen.");
@@ -61,7 +55,10 @@ export default function HomeScreen() {
       const data = await apiService.getUserRankings();
       setRankings(data);
     } catch (e: any) {
-      setError(e.message || "Failed to fetch your ranked cities.");
+      // Don't show error if it's an auth error (API service will handle logout)
+      if (!e.message?.includes("Authentication expired")) {
+        setError(e.message || "Failed to fetch your ranked cities.");
+      }
       setRankings([]);
     } finally {
       setIsLoading(false);
@@ -87,30 +84,30 @@ export default function HomeScreen() {
           text: "Delete",
           style: "destructive",
           onPress: async () => {
-            setIsDeleting(rankingItem.id); // Set loading state for this specific item
+            setIsDeleting(rankingItem.id);
             setError("");
             try {
-              await apiService.deleteRanking(rankingItem.city.id); // Use city.id for the endpoint
-              // Optimistic update (optional, but improves UX):
-              // setRankings(prevRankings => prevRankings.filter(r => r.id !== rankingItem.id));
-              // Or, refetch for consistency:
+              await apiService.deleteRanking(rankingItem.city.id);
               await fetchRankings();
               Alert.alert(
                 "Deleted!",
                 `${rankingItem.city.name} ranking has been removed.`
               );
             } catch (e: any) {
-              setError(
-                e.message ||
-                  `Failed to delete ranking for ${rankingItem.city.name}.`
-              );
-              Alert.alert(
-                "Error",
-                e.message ||
-                  `Failed to delete ranking for ${rankingItem.city.name}.`
-              );
+              // Don't show error if it's an auth error
+              if (!e.message?.includes("Authentication expired")) {
+                setError(
+                  e.message ||
+                    `Failed to delete ranking for ${rankingItem.city.name}.`
+                );
+                Alert.alert(
+                  "Error",
+                  e.message ||
+                    `Failed to delete ranking for ${rankingItem.city.name}.`
+                );
+              }
             } finally {
-              setIsDeleting(null); // Clear loading state for this item
+              setIsDeleting(null);
             }
           },
         },
@@ -192,7 +189,7 @@ export default function HomeScreen() {
             color={COLORS.primary}
             style={styles.loader}
           />
-        ) : error && rankings.length === 0 ? ( // Show general fetch error if list is empty
+        ) : error && rankings.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Text style={styles.errorText}>{error}</Text>
             <TouchableOpacity
@@ -223,8 +220,7 @@ export default function HomeScreen() {
             refreshing={isLoading}
             onRefresh={fetchRankings}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: SPACING.xl }} // Ensure space at the bottom
-            // Display general error message if rankings are present but a subsequent fetch failed
+            contentContainerStyle={{ paddingBottom: SPACING.xl }}
             ListFooterComponent={
               error && rankings.length > 0 ? (
                 <Text style={styles.errorText}>{error}</Text>
