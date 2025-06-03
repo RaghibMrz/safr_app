@@ -54,6 +54,12 @@ export const styles = StyleSheet.create({
     opacity: 0.9,
   },
 
+  containerWithFixedContentHeight: {
+    height: 120,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
   // Stats Row
   statsRow: {
     flexDirection: "row",
@@ -143,8 +149,13 @@ export const styles = StyleSheet.create({
   },
 
   // Selected Cities Container
+  fixedHeightForCityContainer: {
+    height: 150, // <-- Adjust this value based on your estimation
+    justifyContent: "center", // Helps center content vertically
+    alignItems: "center", // Helps center content horizontally
+  },
   selectedCitiesContainer: {
-    minHeight: 120,
+    height: 150,
     backgroundColor: COLORS.surface,
     borderRadius: SPACING.md,
     padding: SPACING.lg,
@@ -399,68 +410,5 @@ export const styles = StyleSheet.create({
     textAlign: "center",
     paddingVertical: SPACING.sm,
     marginBottom: SPACING.md,
-  },
-
-  // Legacy styles (keeping for compatibility)
-  keyboardAvoidingContainer: {
-    flex: 1,
-  },
-  screenContainer: {
-    flex: 1,
-    paddingVertical: SPACING.xxl,
-    paddingHorizontal: SPACING.lg,
-  },
-  header: {
-    paddingTop: Platform.OS === "ios" ? SPACING.sm : SPACING.lg,
-    paddingBottom: SPACING.lg,
-  },
-  headerTitle: {
-    ...TYPOGRAPHY.h3,
-    color: COLORS.textPrimary,
-    marginBottom: SPACING.xs,
-  },
-  headerSubtitle: {
-    ...TYPOGRAPHY.bodyRegular,
-    color: COLORS.textSecondary,
-  },
-  searchButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.surface,
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-    borderRadius: SPACING.md,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    marginBottom: SPACING.xl,
-    shadowColor: COLORS.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  searchButtonText: {
-    ...TYPOGRAPHY.bodyRegular,
-    color: COLORS.placeholder,
-    marginLeft: SPACING.sm,
-  },
-  submitButton: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: SPACING.lg,
-    borderRadius: SPACING.md,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: SPACING.xl,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  submitButtonText: {
-    ...TYPOGRAPHY.button,
-    color: COLORS.textOnPrimary,
-    fontWeight: FONT_WEIGHTS.bold,
-    fontSize: TYPOGRAPHY.sizes.lg,
   },
 });

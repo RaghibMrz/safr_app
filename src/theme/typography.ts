@@ -45,6 +45,7 @@ export const FONT_SIZES = {
   md: 16, // Medium (base size for body text)
   lg: 18, // Large
   xl: 20, // Extra large
+  xlg: 22, // Extra large
   xxl: 24, // Double extra large (for subheadings)
   h3: 28, // Heading 3
   h2: 34, // Heading 2
