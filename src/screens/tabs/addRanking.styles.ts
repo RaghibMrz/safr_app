@@ -7,7 +7,11 @@ import {
   SPACING,
   TYPOGRAPHY,
 } from "../../theme";
-import { CITY_ICON_SIZE, MODAL_HEIGHT_RATIO } from "./addRanking.constants";
+import {
+  CITY_ICON_SIZE,
+  IOS_ADJUST_MODAL,
+  MODAL_HEIGHT_RATIO,
+} from "./addRanking.constants";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
@@ -31,7 +35,7 @@ export const styles = StyleSheet.create({
     paddingBottom: SPACING.lg,
   },
   headerTitle: {
-    ...TYPOGRAPHY.h2,
+    ...TYPOGRAPHY.h3,
     color: COLORS.textPrimary,
     marginBottom: SPACING.xs,
   },
@@ -208,7 +212,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: SPACING.lg,
     paddingTop: SPACING.lg,
     paddingBottom: Platform.OS === "ios" ? 34 : SPACING.lg,
-    height: screenHeight * MODAL_HEIGHT_RATIO,
+    height: screenHeight * (MODAL_HEIGHT_RATIO + IOS_ADJUST_MODAL),
     shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.2,

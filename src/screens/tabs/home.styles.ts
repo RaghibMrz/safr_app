@@ -19,7 +19,7 @@ export const styles = StyleSheet.create({
     paddingVertical: SPACING.lg,
   },
   headerTitle: {
-    ...TYPOGRAPHY.h2,
+    ...TYPOGRAPHY.h3,
     color: COLORS.textPrimary,
     flexShrink: 1,
   },
@@ -59,8 +59,10 @@ export const styles = StyleSheet.create({
   },
   listHeader: {
     ...TYPOGRAPHY.h3,
-    fontSize: TYPOGRAPHY.sizes.xxl,
+    fontSize: TYPOGRAPHY.sizes.xl,
+    textAlign: "center",
     color: COLORS.textPrimary,
+    paddingTop: SPACING.xl,
     marginBottom: SPACING.md,
     marginTop: SPACING.sm,
   },

@@ -1,5 +1,5 @@
 // src/screens/tabs/addRanking.constants.ts
-import { Dimensions } from "react-native";
+import { Dimensions, Platform } from "react-native";
 import { SPACING } from "../../theme";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
@@ -9,6 +9,8 @@ export const CITY_ICON_SIZE = 60;
 export const RANKING_LINE_WIDTH = screenWidth - SPACING.xl * 2 - 60; // Account for labels
 export const RANKING_LINE_HEIGHT = 80;
 export const MODAL_HEIGHT_RATIO = 0.4;
+export const IOS_ADJUST_MODAL = Platform.OS === "ios" ? 0.4 : 0;
+export const IOS_ADJUST_WIDGET = Platform.OS === "ios" ? 80 : 0;
 
 // Animation timings
 export const MODAL_ANIMATION_DURATION = {

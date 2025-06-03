@@ -35,6 +35,7 @@ import {
   CITY_COLORS,
   CITY_ICON_SIZE, // Imported from constants
   FOCUS_INPUT_DELAY,
+  IOS_ADJUST_WIDGET,
   LINE_Y_OFFSET,
   MAX_CITIES_FETCH,
   MAX_SEARCH_RESULTS,
@@ -310,8 +311,8 @@ export default function AddRankingScreen() {
               rankingLineLayout.y +
               rankingLineLayout.height / 2 -
               CITY_ICON_SIZE / 2 -
-              LINE_Y_OFFSET; // Adjust for visual alignment
-
+              LINE_Y_OFFSET -
+              IOS_ADJUST_WIDGET;
             // Update city data in state
             setSelectedCities((prev) => {
               let updatedCities = prev.map((city) =>
