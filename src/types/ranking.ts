@@ -11,3 +11,9 @@ export interface SwipeableRankingItemProps {
   onDelete: (item: UserCityRanking) => void;
   index: number;
 }
+
+export interface DraggableCityData extends City {
+  score: number;
+  color: string;
+  position: { x: number; y: number };
+}

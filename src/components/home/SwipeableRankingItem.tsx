@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   Dimensions,
 } from "react-native";
-import { COLORS } from "../../theme";
+import { COLORS, FONT_SIZES } from "../../theme";
 import { styles } from "@/src/screens/tabs/home.styles";
 import { SwipeableRankingItemProps } from "@/src/types/ranking";
 
@@ -119,7 +119,11 @@ export const SwipeableRankingItem: React.FC<SwipeableRankingItemProps> = ({
           onPress={() => onDelete(item)}
           activeOpacity={0.8}
         >
-          <Ionicons name="trash-outline" size={24} color={COLORS.white} />
+          <Ionicons
+            name="trash-outline"
+            size={FONT_SIZES.xxl}
+            color={COLORS.white}
+          />
           <Text style={styles.deleteText}>Delete</Text>
         </TouchableOpacity>
       </Animated.View>
@@ -160,7 +164,7 @@ export const SwipeableRankingItem: React.FC<SwipeableRankingItemProps> = ({
             <View style={styles.countryContainer}>
               <Ionicons
                 name="location-outline"
-                size={14}
+                size={FONT_SIZES.sm}
                 color={COLORS.textMuted}
               />
               <Text style={styles.countryText}>{item.city.country}</Text>
@@ -168,7 +172,11 @@ export const SwipeableRankingItem: React.FC<SwipeableRankingItemProps> = ({
           </View>
 
           <View style={styles.rightSection}>
-            <Ionicons name="chevron-back" size={20} color={COLORS.textMuted} />
+            <Ionicons
+              name="chevron-back"
+              size={FONT_SIZES.xl}
+              color={COLORS.textMuted}
+            />
           </View>
         </View>
       </Animated.View>

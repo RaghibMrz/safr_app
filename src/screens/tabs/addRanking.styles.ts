@@ -43,18 +43,12 @@ export const styles = StyleSheet.create({
     marginBottom: SPACING.xl,
   },
   modernHeaderTitle: {
-    ...TYPOGRAPHY.h3,
+    ...TYPOGRAPHY.h4,
     color: COLORS.white,
     fontWeight: FONT_WEIGHTS.bold,
     marginTop: SPACING.xl,
     marginBottom: SPACING.xs,
   },
-  modernHeaderSubtitle: {
-    ...TYPOGRAPHY.bodyRegular,
-    color: COLORS.white,
-    opacity: 0.9,
-  },
-
   containerWithFixedContentHeight: {
     height: 120,
     justifyContent: "center",
@@ -151,21 +145,23 @@ export const styles = StyleSheet.create({
 
   // Selected Cities Container
   fixedHeightForCityContainer: {
-    height: 150, // <-- Adjust this value based on your estimation
-    justifyContent: "center", // Helps center content vertically
-    alignItems: "center", // Helps center content horizontally
+    height: 150,
+    justifyContent: "center",
+    alignItems: "center",
   },
   selectedCitiesContainer: {
-    height: 150,
+    height: 160,
     backgroundColor: COLORS.surface,
     borderRadius: SPACING.md,
-    padding: SPACING.lg,
+    paddingVertical: SPACING.lg,
+    paddingHorizontal: SPACING.sm,
     marginBottom: SPACING.xl,
     shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 3,
+    zIndex: 10,
   },
   emptyStateContainer: {
     alignItems: "center",
@@ -173,18 +169,22 @@ export const styles = StyleSheet.create({
     paddingVertical: SPACING.xl,
   },
   emptyStateText: {
-    ...TYPOGRAPHY.bodyRegular,
+    ...TYPOGRAPHY.bodySmall,
     color: COLORS.textMuted,
     marginTop: SPACING.md,
   },
   cityIconsContainer: {
     position: "relative",
     minHeight: CITY_ICON_SIZE * 2,
+    zIndex: 100,
+    elevation: 10,
   },
 
   // Ranking Section
   rankingSection: {
     marginBottom: SPACING.xl,
+    zIndex: 1,
+    elevation: 1,
   },
   rankingSectionTitle: {
     ...TYPOGRAPHY.bodyMedium,
@@ -246,9 +246,23 @@ export const styles = StyleSheet.create({
     fontSize: FONT_SIZES.xxs,
     fontWeight: FONT_WEIGHTS.bold,
   },
+  scoreContainer: {
+    position: "absolute",
+    bottom: -5,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    borderRadius: 10,
+    minWidth: 30,
+    alignItems: "center",
+  },
   removeCityButton: {
     backgroundColor: COLORS.error,
     borderRadius: 10,
+    shadowColor: COLORS.error,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
   },
 
   // Ranking Container - Horizontal Line
@@ -411,5 +425,150 @@ export const styles = StyleSheet.create({
     textAlign: "center",
     paddingVertical: SPACING.sm,
     marginBottom: SPACING.md,
+  },
+});
+
+export const searchModalStyles = StyleSheet.create({
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  modalContent: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: COLORS.background,
+    borderTopLeftRadius: SPACING.xl,
+    borderTopRightRadius: SPACING.xl,
+    paddingTop: SPACING.sm,
+    paddingBottom: SPACING.lg,
+    height: "70%",
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  modalHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: COLORS.textMuted,
+    borderRadius: 2,
+    alignSelf: "center",
+    marginBottom: SPACING.lg,
+    opacity: 0.3,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: SPACING.lg,
+    marginBottom: SPACING.lg,
+  },
+  modalTitle: {
+    ...TYPOGRAPHY.h3,
+    color: COLORS.textPrimary,
+    fontWeight: FONT_WEIGHTS.bold,
+  },
+  closeButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.surface,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  searchInputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.surface,
+    borderRadius: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    marginHorizontal: SPACING.lg,
+    marginBottom: SPACING.lg,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  modalSearchInput: {
+    flex: 1,
+    paddingVertical: SPACING.md,
+    marginLeft: SPACING.sm,
+    fontSize: TYPOGRAPHY.sizes.md,
+    color: COLORS.textPrimary,
+  },
+  searchResultsList: {
+    flex: 1,
+  },
+  listContent: {
+    paddingHorizontal: SPACING.lg,
+    paddingBottom: SPACING.xl,
+  },
+  searchResultItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.surface,
+    borderRadius: SPACING.md,
+    padding: SPACING.md,
+    marginBottom: SPACING.sm,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  cityIconSmall: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.primary,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  cityInitial: {
+    ...TYPOGRAPHY.bodyMedium,
+    color: COLORS.white,
+    fontSize: TYPOGRAPHY.sizes.lg,
+    fontWeight: FONT_WEIGHTS.bold,
+  },
+  cityInfo: {
+    flex: 1,
+    marginLeft: SPACING.md,
+  },
+  cityName: {
+    ...TYPOGRAPHY.bodyMedium,
+    color: COLORS.textPrimary,
+    fontWeight: FONT_WEIGHTS.semiBold,
+  },
+  countryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: SPACING.xs,
+  },
+  countryName: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textMuted,
+    marginLeft: SPACING.xs,
+  },
+  addButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.primary,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  noResultsContainer: {
+    alignItems: "center",
+    paddingVertical: SPACING["3xl"],
+  },
+  noResultsText: {
+    ...TYPOGRAPHY.bodyRegular,
+    color: COLORS.textMuted,
+    textAlign: "center",
+    marginTop: SPACING.lg,
+  },
+  noResultsSubtext: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textMuted,
+    textAlign: "center",
+    marginTop: SPACING.xs,
   },
 });

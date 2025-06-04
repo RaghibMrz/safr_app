@@ -15,9 +15,7 @@ import {
   Animated,
   Dimensions,
   Easing,
-  KeyboardAvoidingView,
   PanResponder,
-  Platform,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -36,10 +34,13 @@ import {
   CITY_COLORS,
   CITY_ICON_SIZE,
   FOCUS_INPUT_DELAY,
+  ICONS_PER_ROW,
+  INITIAL_SPACING,
   IOS_ADJUST_WIDGET,
   LINE_Y_OFFSET,
   MAX_CITIES_FETCH,
   MAX_SEARCH_RESULTS,
+  MAX_UNRANKED_CITIES,
   MODAL_ANIMATION_DURATION,
   RANKING_LINE_WIDTH,
   SEARCH_DEBOUNCE_DELAY,
@@ -47,19 +48,9 @@ import {
 import { styles } from "../../src/screens/tabs/addRanking.styles";
 import { COLORS, FONT_SIZES, SPACING } from "../../src/theme";
 import { City } from "@/src/types/city";
+import { DraggableCityData } from "@/src/types/ranking";
 
 const { height: screenHeight } = Dimensions.get("window");
-
-// Layout constants for initial city positioning
-const INITIAL_SPACING = SPACING.md;
-const ICONS_PER_ROW = 5;
-const MAX_UNRANKED_CITIES = 10;
-
-interface DraggableCityData extends City {
-  score: number;
-  color: string;
-  position: { x: number; y: number };
-}
 
 export default function AddRankingScreen() {
   const authContext = useContext(AuthContext);
@@ -500,9 +491,6 @@ export default function AddRankingScreen() {
         >
           <Animated.View style={{ opacity: headerOpacity }}>
             <Text style={styles.modernHeaderTitle}>Rank Your Cities</Text>
-            <Text style={styles.modernHeaderSubtitle}>
-              Add cities and drag them to rate your experience
-            </Text>
           </Animated.View>
         </View>
 
@@ -605,7 +593,7 @@ export default function AddRankingScreen() {
           </View>
 
           {/* Ranking Line */}
-          <View style={styles.rankingSection}>
+          <View>
             <Text style={styles.rankingSectionTitle}>
               Drag Cities Here to Rate
             </Text>
@@ -636,7 +624,7 @@ export default function AddRankingScreen() {
                 <>
                   <Ionicons
                     name="checkmark-circle"
-                    size={24}
+                    size={FONT_SIZES.xxl}
                     color={COLORS.white}
                   />
                   <Text style={styles.modernSubmitButtonText}>

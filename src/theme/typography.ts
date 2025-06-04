@@ -51,6 +51,8 @@ export const FONT_SIZES = {
   h2: 34, // Heading 2
   h1: 40, // Heading 1 (large titles)
   logo: 48, // For the main app logo text
+  logoLarge: 64,
+  logoExtraLarge: 80,
 };
 
 // Define line heights for readability.

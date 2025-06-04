@@ -20,7 +20,6 @@ import { AuthContext } from "../../src/context/AuthContext";
 import { SwipeableRankingItem } from "../../src/components/home/SwipeableRankingItem";
 import { styles } from "../../src/screens/tabs/home.styles";
 import { COLORS, FONT_SIZES, SPACING } from "../../src/theme";
-import { City } from "@/src/types/city";
 import { UserCityRanking } from "@/src/types/ranking";
 
 export default function HomeScreen() {
@@ -197,7 +196,7 @@ export default function HomeScreen() {
           >
             <Ionicons
               name="add-circle-outline"
-              size={24}
+              size={FONT_SIZES.xxl}
               color={COLORS.white}
             />
             <Text style={styles.addButtonText}>Rank a New City</Text>
@@ -225,7 +224,7 @@ export default function HomeScreen() {
         <View style={styles.emptyContainer}>
           <Ionicons
             name="alert-circle-outline"
-            size={64}
+            size={FONT_SIZES.logoLarge}
             color={COLORS.error}
           />
           <Text style={styles.errorText}>{error}</Text>
@@ -238,7 +237,11 @@ export default function HomeScreen() {
 
     return (
       <View style={styles.emptyContainer}>
-        <Ionicons name="map-outline" size={80} color={COLORS.textMuted} />
+        <Ionicons
+          name="map-outline"
+          size={FONT_SIZES.logoExtraLarge}
+          color={COLORS.textMuted}
+        />
         <Text style={styles.emptyTitle}>No Cities Ranked Yet</Text>
         <Text style={styles.emptySubtitle}>
           Start exploring and ranking cities you've visited or want to visit!

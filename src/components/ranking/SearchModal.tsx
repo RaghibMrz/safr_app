@@ -12,8 +12,9 @@ import {
   StyleSheet,
 } from "react-native";
 
-import { COLORS, SPACING, TYPOGRAPHY, FONT_WEIGHTS } from "../../theme";
+import { COLORS, FONT_SIZES } from "../../theme";
 import { City } from "@/src/types/city";
+import { searchModalStyles } from "@/src/screens/tabs/addRanking.styles";
 
 interface SearchModalProps {
   visible: boolean;
@@ -56,28 +57,28 @@ export const SearchModal = forwardRef<TextInput, SearchModalProps>(
         }}
       >
         <TouchableOpacity
-          style={styles.searchResultItem}
+          style={searchModalStyles.searchResultItem}
           onPress={() => onSelectCity(item)}
           activeOpacity={0.7}
         >
-          <View style={styles.cityIconSmall}>
-            <Text style={styles.cityInitial}>
+          <View style={searchModalStyles.cityIconSmall}>
+            <Text style={searchModalStyles.cityInitial}>
               {item.name.charAt(0).toUpperCase()}
             </Text>
           </View>
-          <View style={styles.cityInfo}>
-            <Text style={styles.cityName}>{item.name}</Text>
-            <View style={styles.countryRow}>
+          <View style={searchModalStyles.cityInfo}>
+            <Text style={searchModalStyles.cityName}>{item.name}</Text>
+            <View style={searchModalStyles.countryRow}>
               <Ionicons
                 name="location-outline"
-                size={12}
+                size={FONT_SIZES.xs}
                 color={COLORS.textMuted}
               />
-              <Text style={styles.countryName}>{item.country}</Text>
+              <Text style={searchModalStyles.countryName}>{item.country}</Text>
             </View>
           </View>
-          <View style={styles.addButton}>
-            <Ionicons name="add" size={24} color={COLORS.white} />
+          <View style={searchModalStyles.addButton}>
+            <Ionicons name="add" size={FONT_SIZES.xxl} color={COLORS.white} />
           </View>
         </TouchableOpacity>
       </Animated.View>
@@ -91,7 +92,7 @@ export const SearchModal = forwardRef<TextInput, SearchModalProps>(
         onRequestClose={onClose}
       >
         <Animated.View
-          style={[styles.modalBackdrop, { opacity: modalOpacity }]}
+          style={[searchModalStyles.modalBackdrop, { opacity: modalOpacity }]}
         >
           <TouchableOpacity
             style={StyleSheet.absoluteFillObject}
@@ -102,28 +103,36 @@ export const SearchModal = forwardRef<TextInput, SearchModalProps>(
 
         <Animated.View
           style={[
-            styles.modalContent,
+            searchModalStyles.modalContent,
             { transform: [{ translateY: modalTranslateY }] },
           ]}
         >
-          <View style={styles.modalHandle} />
+          <View style={searchModalStyles.modalHandle} />
 
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Search Cities</Text>
+          <View style={searchModalStyles.modalHeader}>
+            <Text style={searchModalStyles.modalTitle}>Search Cities</Text>
             <TouchableOpacity
               onPress={onClose}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              style={styles.closeButton}
+              style={searchModalStyles.closeButton}
             >
-              <Ionicons name="close" size={24} color={COLORS.textPrimary} />
+              <Ionicons
+                name="close"
+                size={FONT_SIZES.xxl}
+                color={COLORS.textPrimary}
+              />
             </TouchableOpacity>
           </View>
 
-          <View style={styles.searchInputContainer}>
-            <Ionicons name="search" size={20} color={COLORS.textMuted} />
+          <View style={searchModalStyles.searchInputContainer}>
+            <Ionicons
+              name="search"
+              size={FONT_SIZES.xl}
+              color={COLORS.textMuted}
+            />
             <TextInput
               ref={ref}
-              style={styles.modalSearchInput}
+              style={searchModalStyles.modalSearchInput}
               placeholder="Type city name or country..."
               placeholderTextColor={COLORS.placeholder}
               value={searchTerm}
@@ -138,7 +147,7 @@ export const SearchModal = forwardRef<TextInput, SearchModalProps>(
               >
                 <Ionicons
                   name="close-circle"
-                  size={20}
+                  size={FONT_SIZES.xl}
                   color={COLORS.textMuted}
                 />
               </TouchableOpacity>
@@ -149,18 +158,22 @@ export const SearchModal = forwardRef<TextInput, SearchModalProps>(
             data={displayedCities}
             renderItem={renderSearchResult}
             keyExtractor={(item) => item.id.toString()}
-            style={styles.searchResultsList}
+            style={searchModalStyles.searchResultsList}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
-            contentContainerStyle={styles.listContent}
+            contentContainerStyle={searchModalStyles.listContent}
             ListEmptyComponent={
               searchTerm.trim() && !isLoading ? (
-                <View style={styles.noResultsContainer}>
-                  <Ionicons name="search" size={48} color={COLORS.textMuted} />
-                  <Text style={styles.noResultsText}>
+                <View style={searchModalStyles.noResultsContainer}>
+                  <Ionicons
+                    name="search"
+                    size={FONT_SIZES.logo}
+                    color={COLORS.textMuted}
+                  />
+                  <Text style={searchModalStyles.noResultsText}>
                     No cities found matching "{searchTerm}"
                   </Text>
-                  <Text style={styles.noResultsSubtext}>
+                  <Text style={searchModalStyles.noResultsSubtext}>
                     Try searching for a different city or country
                   </Text>
                 </View>
@@ -174,148 +187,3 @@ export const SearchModal = forwardRef<TextInput, SearchModalProps>(
 );
 
 SearchModal.displayName = "SearchModal";
-
-const styles = StyleSheet.create({
-  modalBackdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-  },
-  modalContent: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: COLORS.background,
-    borderTopLeftRadius: SPACING.xl,
-    borderTopRightRadius: SPACING.xl,
-    paddingTop: SPACING.sm,
-    paddingBottom: SPACING.lg,
-    height: "70%",
-    shadowColor: COLORS.shadow,
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 10,
-  },
-  modalHandle: {
-    width: 40,
-    height: 4,
-    backgroundColor: COLORS.textMuted,
-    borderRadius: 2,
-    alignSelf: "center",
-    marginBottom: SPACING.lg,
-    opacity: 0.3,
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: SPACING.lg,
-    marginBottom: SPACING.lg,
-  },
-  modalTitle: {
-    ...TYPOGRAPHY.h3,
-    color: COLORS.textPrimary,
-    fontWeight: FONT_WEIGHTS.bold,
-  },
-  closeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: COLORS.surface,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  searchInputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.surface,
-    borderRadius: SPACING.md,
-    paddingHorizontal: SPACING.lg,
-    marginHorizontal: SPACING.lg,
-    marginBottom: SPACING.lg,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  modalSearchInput: {
-    flex: 1,
-    paddingVertical: SPACING.md,
-    marginLeft: SPACING.sm,
-    fontSize: TYPOGRAPHY.sizes.md,
-    color: COLORS.textPrimary,
-  },
-  searchResultsList: {
-    flex: 1,
-  },
-  listContent: {
-    paddingHorizontal: SPACING.lg,
-    paddingBottom: SPACING.xl,
-  },
-  searchResultItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.surface,
-    borderRadius: SPACING.md,
-    padding: SPACING.md,
-    marginBottom: SPACING.sm,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  cityIconSmall: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: COLORS.primary,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  cityInitial: {
-    ...TYPOGRAPHY.bodyMedium,
-    color: COLORS.white,
-    fontSize: TYPOGRAPHY.sizes.lg,
-    fontWeight: FONT_WEIGHTS.bold,
-  },
-  cityInfo: {
-    flex: 1,
-    marginLeft: SPACING.md,
-  },
-  cityName: {
-    ...TYPOGRAPHY.bodyMedium,
-    color: COLORS.textPrimary,
-    fontWeight: FONT_WEIGHTS.semiBold,
-  },
-  countryRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: SPACING.xs,
-  },
-  countryName: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textMuted,
-    marginLeft: SPACING.xs,
-  },
-  addButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: COLORS.primary,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  noResultsContainer: {
-    alignItems: "center",
-    paddingVertical: SPACING["3xl"],
-  },
-  noResultsText: {
-    ...TYPOGRAPHY.bodyRegular,
-    color: COLORS.textMuted,
-    textAlign: "center",
-    marginTop: SPACING.lg,
-  },
-  noResultsSubtext: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textMuted,
-    textAlign: "center",
-    marginTop: SPACING.xs,
-  },
-});
