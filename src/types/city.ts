@@ -9,7 +9,7 @@ export interface City {
 export interface DraggableCityProps {
   city: City & {
     color: string;
-    score: number;
+    score: number | null;
   };
   position: Animated.ValueXY;
   isDragging: boolean;

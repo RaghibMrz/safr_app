@@ -31,6 +31,8 @@ export const DraggableCity: React.FC<DraggableCityProps> = ({
     return COLORS.scoreLow;
   };
 
+  const isRanked = city.score !== null;
+
   return (
     <Animated.View
       style={[
@@ -41,7 +43,7 @@ export const DraggableCity: React.FC<DraggableCityProps> = ({
             : [],
           zIndex: isDragging
             ? Z_INDEX_DRAGGING
-            : city.score > 0
+            : isRanked
             ? Z_INDEX_ITEM_SCORED
             : Z_INDEX_ITEM_DEFAULT,
           elevation: isDragging ? ELEVATION_DRAGGING : ELEVATION_DEFAULT,
@@ -56,9 +58,10 @@ export const DraggableCity: React.FC<DraggableCityProps> = ({
           {
             backgroundColor: city.color,
             transform: isDragging ? [{ scale: 1.1 }] : [{ scale: 1 }],
-            borderWidth: city.score > 0 ? 3 : 0,
-            borderColor:
-              city.score > 0 ? getScoreColor(city.score) : "transparent",
+            borderWidth: isRanked ? 3 : 0,
+            borderColor: isRanked
+              ? getScoreColor(city.score as number)
+              : "transparent",
           },
         ]}
         {...panResponder}
@@ -66,11 +69,11 @@ export const DraggableCity: React.FC<DraggableCityProps> = ({
         <Text style={styles.cityIconText} numberOfLines={1}>
           {city.name.substring(0, WIDGET_CITY_NAME_MAX_LENGTH).toUpperCase()}
         </Text>
-        {city.score > 0 && (
+        {isRanked && (
           <View
             style={[
               styles.scoreContainer,
-              { backgroundColor: getScoreColor(city.score) },
+              { backgroundColor: getScoreColor(city.score as number) },
             ]}
           >
             <Text style={styles.cityScoreText}>{city.score}</Text>

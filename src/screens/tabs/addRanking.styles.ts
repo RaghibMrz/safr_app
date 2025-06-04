@@ -51,7 +51,7 @@ export const styles = StyleSheet.create({
   },
   // Changed to minHeight for flexibility
   containerWithFixedContentHeight: {
-    minHeight: 120, // Ensures a minimum height, but allows content to expand
+    minHeight: 140,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -170,6 +170,7 @@ export const styles = StyleSheet.create({
   emptyStateContainer: {
     flex: 1,
     alignItems: "center",
+    minHeight: CITY_ICON_SIZE * 2 + SPACING.sm,
     justifyContent: "center",
     paddingVertical: SPACING.xl,
   },

@@ -13,7 +13,7 @@ export interface SwipeableRankingItemProps {
 }
 
 export interface DraggableCityData extends City {
-  score: number;
+  score: number | null;
   color: string;
   position: { x: number; y: number };
 }

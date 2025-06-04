@@ -209,7 +209,8 @@ export default function AddRankingScreen() {
       let unrankedCount = 0;
 
       newSelectedCities.forEach((city, index) => {
-        if (city.score === 0) {
+        // Changed condition to check for null score
+        if (city.score === null) {
           const row = Math.floor(unrankedCount / ICONS_PER_ROW);
           const col = unrankedCount % ICONS_PER_ROW;
           const newX = col * (CITY_ICON_SIZE + INITIAL_SPACING);
@@ -273,15 +274,20 @@ export default function AddRankingScreen() {
           const SNAP_PADDING = CITY_ICON_SIZE * 0.7;
           const lineTop = rankingLineLayout.y - SNAP_PADDING;
           const lineBottom =
-            rankingLineLayout.y + rankingLineLayout.height + SNAP_PADDING;
+            rankingLineLayout.y + rankingLineLayout.height + SNAP_PADDING * 4;
 
           if (absoluteY >= lineTop && absoluteY <= lineBottom) {
             const currentX = (position.x as any)._value;
+
             const normalizedX = Math.max(
               0,
               Math.min(currentX, RANKING_LINE_WIDTH)
             );
-            const score = Math.round((normalizedX / RANKING_LINE_WIDTH) * 100);
+
+            const score = Math.max(
+              0,
+              Math.round((normalizedX / RANKING_LINE_WIDTH) * 100)
+            );
 
             const snapY =
               rankingLineLayout.y +
@@ -308,13 +314,27 @@ export default function AddRankingScreen() {
             }).start();
           } else {
             const city = selectedCities.find((c) => c.id === cityId);
-            const targetX = city?.position.x || 0;
-            const targetY = city?.position.y || 0;
 
-            Animated.spring(position, {
-              toValue: { x: targetX, y: targetY },
-              useNativeDriver: false,
-            }).start();
+            const unrankedAreaBottom = rankingLineLayout.y - CITY_ICON_SIZE;
+
+            if (absoluteY < unrankedAreaBottom) {
+              setSelectedCities((prev) => {
+                let updatedCities = prev.map((c) =>
+                  // Set score to null when returning to unranked area
+                  c.id === cityId ? { ...c, score: null } : c
+                );
+                updatedCities = recalculateUnrankedPositions(updatedCities);
+                return updatedCities;
+              });
+            } else {
+              const targetX = city?.position.x || 0;
+              const targetY = city?.position.y || 0;
+
+              Animated.spring(position, {
+                toValue: { x: targetX, y: targetY },
+                useNativeDriver: false,
+              }).start();
+            }
           }
 
           setCurrentDraggingId(null);
@@ -341,7 +361,8 @@ export default function AddRankingScreen() {
         return;
       }
 
-      const unrankedCities = selectedCities.filter((c) => c.score === 0);
+      // Filter for cities that have score: null (unranked)
+      const unrankedCities = selectedCities.filter((c) => c.score === null);
 
       if (unrankedCities.length >= MAX_UNRANKED_CITIES) {
         Alert.alert(
@@ -365,7 +386,7 @@ export default function AddRankingScreen() {
 
       const newCity: DraggableCityData = {
         ...city,
-        score: 0,
+        score: null, // Initialize score to null for unranked
         color: CITY_COLORS[colorIndex.current % CITY_COLORS.length],
         position: { x: initialX, y: initialY },
       };
@@ -390,7 +411,10 @@ export default function AddRankingScreen() {
   );
 
   const handleSubmitRankings = useCallback(async () => {
-    const citiesWithScores = selectedCities.filter((city) => city.score > 0);
+    // Filter for cities where score is a number (i.e., not null)
+    const citiesWithScores = selectedCities.filter(
+      (city) => city.score !== null
+    );
 
     if (citiesWithScores.length === 0) {
       Alert.alert(
@@ -404,7 +428,8 @@ export default function AddRankingScreen() {
     try {
       const results = await Promise.allSettled(
         citiesWithScores.map((city) =>
-          apiService.addOrUpdateRanking(city.id, city.score)
+          // Type assertion needed here because TypeScript doesn't know score is not null inside map
+          apiService.addOrUpdateRanking(city.id, city.score as number)
         )
       );
 
@@ -474,9 +499,9 @@ export default function AddRankingScreen() {
     );
   }
 
-  // Calculate stats
-  const rankedCount = selectedCities.filter((c) => c.score > 0).length;
-  const unrankedCount = selectedCities.filter((c) => c.score === 0).length;
+  // Calculate stats using null/not null
+  const rankedCount = selectedCities.filter((c) => c.score !== null).length;
+  const unrankedCount = selectedCities.filter((c) => c.score === null).length;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -553,6 +578,7 @@ export default function AddRankingScreen() {
                 </Text>
                 <View style={styles.searchButtonBadge}>
                   <Text style={styles.searchButtonBadgeText}>
+                    {/* Display based on unrankedCount, which now uses null */}
                     {Math.max(0, MAX_UNRANKED_CITIES - unrankedCount)} left
                   </Text>
                 </View>
@@ -612,10 +638,12 @@ export default function AddRankingScreen() {
                 isSubmitting && styles.buttonDisabled,
                 {
                   backgroundColor:
+                    // Button enabled if at least one city is ranked (score !== null)
                     rankedCount > 0 ? COLORS.primary : COLORS.disabled,
                 },
               ]}
               onPress={handleSubmitRankings}
+              // Button disabled if submitting or no cities are ranked
               disabled={isSubmitting || rankedCount === 0}
               activeOpacity={0.9}
             >
