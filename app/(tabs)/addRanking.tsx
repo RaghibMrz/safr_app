@@ -524,7 +524,7 @@ export default function AddRankingScreen() {
               >
                 <Ionicons
                   name="information-circle"
-                  size={FONT_SIZES.xxl}
+                  size={FONT_SIZES.xl3}
                   color={COLORS.primary}
                 />
                 <Text style={styles.instructionsText}>
@@ -545,7 +545,7 @@ export default function AddRankingScreen() {
               <View style={styles.searchButtonContent}>
                 <Ionicons
                   name="search"
-                  size={FONT_SIZES.xlg}
+                  size={FONT_SIZES.xxl}
                   color={COLORS.primary}
                 />
                 <Text style={styles.searchButtonText}>
@@ -553,7 +553,7 @@ export default function AddRankingScreen() {
                 </Text>
                 <View style={styles.searchButtonBadge}>
                   <Text style={styles.searchButtonBadgeText}>
-                    {MAX_UNRANKED_CITIES - unrankedCount} left
+                    {Math.max(0, MAX_UNRANKED_CITIES - unrankedCount)} left
                   </Text>
                 </View>
               </View>
@@ -625,7 +625,7 @@ export default function AddRankingScreen() {
                 <>
                   <Ionicons
                     name="checkmark-circle"
-                    size={FONT_SIZES.xxl}
+                    size={FONT_SIZES.xl3}
                     color={COLORS.white}
                   />
                   <Text style={styles.modernSubmitButtonText}>

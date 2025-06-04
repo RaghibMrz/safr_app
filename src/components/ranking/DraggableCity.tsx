@@ -4,9 +4,14 @@ import { Animated, Text, TouchableOpacity, View } from "react-native";
 
 import {
   CITY_ICON_SIZE,
+  ELEVATION_DEFAULT,
+  ELEVATION_DRAGGING,
   REMOVE_BUTTON_OFFSET,
   SCORE_MARKERS,
   WIDGET_CITY_NAME_MAX_LENGTH,
+  Z_INDEX_DRAGGING,
+  Z_INDEX_ITEM_DEFAULT,
+  Z_INDEX_ITEM_SCORED,
 } from "../../screens/tabs/addRanking.constants";
 import { COLORS, FONT_SIZES } from "../../theme";
 import { DraggableCityProps } from "@/src/types/city";
@@ -20,10 +25,10 @@ export const DraggableCity: React.FC<DraggableCityProps> = ({
   onRemove,
 }) => {
   const getScoreColor = (score: number) => {
-    if (score >= SCORE_MARKERS[3]) return "#4CAF50";
-    if (score >= SCORE_MARKERS[2]) return "#FFC107";
-    if (score >= SCORE_MARKERS[1]) return "#FF9800";
-    return "#F44336";
+    if (score >= SCORE_MARKERS[3]) return COLORS.scoreHigh;
+    if (score >= SCORE_MARKERS[2]) return COLORS.scoreMediumHigh;
+    if (score >= SCORE_MARKERS[1]) return COLORS.scoreMediumLow;
+    return COLORS.scoreLow;
   };
 
   return (
@@ -34,8 +39,12 @@ export const DraggableCity: React.FC<DraggableCityProps> = ({
           transform: position
             ? [{ translateX: position.x }, { translateY: position.y }]
             : [],
-          zIndex: isDragging ? 1000 : city.score > 0 ? 100 : 50,
-          elevation: isDragging ? 20 : 10,
+          zIndex: isDragging
+            ? Z_INDEX_DRAGGING
+            : city.score > 0
+            ? Z_INDEX_ITEM_SCORED
+            : Z_INDEX_ITEM_DEFAULT,
+          elevation: isDragging ? ELEVATION_DRAGGING : ELEVATION_DEFAULT,
           width: CITY_ICON_SIZE,
           height: CITY_ICON_SIZE,
         },

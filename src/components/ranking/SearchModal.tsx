@@ -15,6 +15,7 @@ import {
 import { COLORS, FONT_SIZES } from "../../theme";
 import { City } from "@/src/types/city";
 import { searchModalStyles } from "@/src/screens/tabs/addRanking.styles";
+import { SearchResultItem } from "./SearchResultItem";
 
 interface SearchModalProps {
   visible: boolean;
@@ -43,45 +44,9 @@ export const SearchModal = forwardRef<TextInput, SearchModalProps>(
     },
     ref
   ) => {
-    const renderSearchResult = ({
-      item,
-      index,
-    }: {
-      item: City;
-      index: number;
-    }) => (
-      <Animated.View
-        style={{
-          opacity: 1,
-          transform: [{ translateX: 0 }],
-        }}
-      >
-        <TouchableOpacity
-          style={searchModalStyles.searchResultItem}
-          onPress={() => onSelectCity(item)}
-          activeOpacity={0.7}
-        >
-          <View style={searchModalStyles.cityIconSmall}>
-            <Text style={searchModalStyles.cityInitial}>
-              {item.name.charAt(0).toUpperCase()}
-            </Text>
-          </View>
-          <View style={searchModalStyles.cityInfo}>
-            <Text style={searchModalStyles.cityName}>{item.name}</Text>
-            <View style={searchModalStyles.countryRow}>
-              <Ionicons
-                name="location-outline"
-                size={FONT_SIZES.xs}
-                color={COLORS.textMuted}
-              />
-              <Text style={searchModalStyles.countryName}>{item.country}</Text>
-            </View>
-          </View>
-          <View style={searchModalStyles.addButton}>
-            <Ionicons name="add" size={FONT_SIZES.xxl} color={COLORS.white} />
-          </View>
-        </TouchableOpacity>
-      </Animated.View>
+    // The renderSearchResult function is now simpler, just rendering the new component
+    const renderSearchResult = ({ item }: { item: City }) => (
+      <SearchResultItem item={item} onSelectCity={onSelectCity} />
     );
 
     return (
@@ -118,7 +83,7 @@ export const SearchModal = forwardRef<TextInput, SearchModalProps>(
             >
               <Ionicons
                 name="close"
-                size={FONT_SIZES.xxl}
+                size={FONT_SIZES.xl3}
                 color={COLORS.textPrimary}
               />
             </TouchableOpacity>

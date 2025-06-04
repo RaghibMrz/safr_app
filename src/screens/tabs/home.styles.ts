@@ -49,7 +49,7 @@ export const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    backgroundColor: COLORS.whiteTransparent20,
     justifyContent: "center",
     alignItems: "center",
     marginLeft: SPACING.md,

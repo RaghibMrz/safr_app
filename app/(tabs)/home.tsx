@@ -1,7 +1,7 @@
 // app/(tabs)/home.tsx
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
-import React, { useCallback, useContext, useState } from "react";
+import React, { useCallback, useContext, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -110,14 +110,22 @@ export default function HomeScreen() {
   };
 
   // Calculate statistics
-  const averageScore =
-    rankings.length > 0
-      ? rankings.reduce((sum, r) => sum + r.personal_score, 0) / rankings.length
-      : 0;
-  const highestRated = rankings.reduce(
-    (max, r) => (r.personal_score > (max?.personal_score || 0) ? r : max),
-    null as UserCityRanking | null
-  );
+  const averageScore = useMemo(() => {
+    if (rankings.length === 0) {
+      return 0;
+    }
+    const totalScore = rankings.reduce((sum, r) => sum + r.personal_score, 0);
+    return totalScore / rankings.length;
+  }, [rankings]);
+
+  const highestRated = useMemo(() => {
+    return rankings.reduce<UserCityRanking | null>((maxAcc, currentRanking) => {
+      if (!maxAcc || currentRanking.personal_score > maxAcc.personal_score) {
+        return currentRanking;
+      }
+      return maxAcc;
+    }, null);
+  }, [rankings]);
 
   const renderHeader = () => (
     <View>
@@ -150,7 +158,7 @@ export default function HomeScreen() {
           <View style={styles.statCard}>
             <Ionicons
               name="flag"
-              size={FONT_SIZES.xxl}
+              size={FONT_SIZES.xl3}
               color={COLORS.primary}
             />
             <Text style={styles.statNumber}>{rankings.length}</Text>
@@ -160,7 +168,7 @@ export default function HomeScreen() {
           <View style={styles.statCard}>
             <Ionicons
               name="stats-chart"
-              size={FONT_SIZES.xxl}
+              size={FONT_SIZES.xl3}
               color={COLORS.primary}
             />
             <Text style={styles.statNumber}>{averageScore.toFixed(0)}</Text>
@@ -172,7 +180,7 @@ export default function HomeScreen() {
             <View style={styles.statCard}>
               <Ionicons
                 name="trophy"
-                size={FONT_SIZES.xxl}
+                size={FONT_SIZES.xl3}
                 color={COLORS.primary}
               />
               <Text style={styles.statText} numberOfLines={1}>
@@ -196,7 +204,7 @@ export default function HomeScreen() {
           >
             <Ionicons
               name="add-circle-outline"
-              size={FONT_SIZES.xxl}
+              size={FONT_SIZES.xl3}
               color={COLORS.white}
             />
             <Text style={styles.addButtonText}>Rank a New City</Text>

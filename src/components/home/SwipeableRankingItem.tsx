@@ -12,6 +12,12 @@ import {
 import { COLORS, FONT_SIZES } from "../../theme";
 import { styles } from "@/src/screens/tabs/home.styles";
 import { SwipeableRankingItemProps } from "@/src/types/ranking";
+import {
+  ANIMATION_DURATION_FADE,
+  PAN_ACTIVATION_OFFSET,
+  STAGGER_DELAY_MS,
+} from "@/src/screens/tabs/home.constants";
+import { SCORE_MARKERS } from "@/src/screens/tabs/addRanking.constants";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const SWIPE_THRESHOLD = -120;
@@ -27,20 +33,17 @@ export const SwipeableRankingItem: React.FC<SwipeableRankingItemProps> = ({
   const itemOpacity = useRef(new Animated.Value(1)).current;
 
   // Simple fade-in on mount
-  React.useEffect(() => {
-    itemOpacity.setValue(0);
-    Animated.timing(itemOpacity, {
-      toValue: 1,
-      duration: 300,
-      delay: index * 50, // Stagger animation
-      useNativeDriver: true,
-    }).start();
-  }, [index]);
+  Animated.timing(itemOpacity, {
+    toValue: 1,
+    duration: ANIMATION_DURATION_FADE,
+    delay: index * STAGGER_DELAY_MS,
+    useNativeDriver: true,
+  }).start();
 
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, gestureState) => {
-        return Math.abs(gestureState.dx) > 5;
+        return Math.abs(gestureState.dx) > PAN_ACTIVATION_OFFSET;
       },
       onPanResponderMove: (_, gestureState) => {
         if (gestureState.dx < 0) {
@@ -90,10 +93,10 @@ export const SwipeableRankingItem: React.FC<SwipeableRankingItemProps> = ({
   ).current;
 
   const getScoreColor = (score: number) => {
-    if (score >= 80) return "#4CAF50"; // Green
-    if (score >= 60) return "#FFC107"; // Amber
-    if (score >= 40) return "#FF9800"; // Orange
-    return "#F44336"; // Red
+    if (score >= SCORE_MARKERS[3]) return COLORS.scoreHigh;
+    if (score >= SCORE_MARKERS[2]) return COLORS.scoreMediumHigh;
+    if (score >= SCORE_MARKERS[1]) return COLORS.scoreMediumLow;
+    return COLORS.scoreLow;
   };
 
   return (
@@ -121,7 +124,7 @@ export const SwipeableRankingItem: React.FC<SwipeableRankingItemProps> = ({
         >
           <Ionicons
             name="trash-outline"
-            size={FONT_SIZES.xxl}
+            size={FONT_SIZES.xl3}
             color={COLORS.white}
           />
           <Text style={styles.deleteText}>Delete</Text>

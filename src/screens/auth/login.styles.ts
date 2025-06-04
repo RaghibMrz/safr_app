@@ -1,5 +1,5 @@
 import { Platform, StyleSheet } from "react-native";
-import { COLORS, FONT_WEIGHTS, SPACING, TYPOGRAPHY } from "../../theme"; // Adjusted path
+import { COLORS, FONT_WEIGHTS, SPACING, TYPOGRAPHY } from "../../theme";
 
 export const styles = StyleSheet.create({
   safeArea: {

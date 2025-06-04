@@ -45,8 +45,9 @@ export const FONT_SIZES = {
   md: 16, // Medium (base size for body text)
   lg: 18, // Large
   xl: 20, // Extra large
-  xlg: 22, // Extra large
-  xxl: 24, // Double extra large (for subheadings)
+  xxl: 22, // Extra extra large
+  xl3: 24, // Triple extra large (for subheadings)
+  xl4: 26, // Quadruple extra large (for subheadings)
   h3: 28, // Heading 3
   h2: 34, // Heading 2
   h1: 40, // Heading 1 (large titles)
@@ -66,7 +67,7 @@ export const LINE_HEIGHTS = {
   md: FONT_SIZES.md * 1.5,
   lg: FONT_SIZES.lg * 1.5,
   xl: FONT_SIZES.xl * 1.4,
-  xxl: FONT_SIZES.xxl * 1.4,
+  xxl: FONT_SIZES.xl3 * 1.4,
   h3: FONT_SIZES.h3 * 1.3,
   h2: FONT_SIZES.h2 * 1.3,
   h1: FONT_SIZES.h1 * 1.2,
@@ -102,7 +103,7 @@ export const TYPOGRAPHY = {
   },
   h4: {
     fontFamily: FONT_FAMILY_BOLD,
-    fontSize: FONT_SIZES.xxl,
+    fontSize: FONT_SIZES.xl3,
     lineHeight: LINE_HEIGHTS.xxl,
     fontWeight: FONT_WEIGHTS.bold,
   },

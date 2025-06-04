@@ -49,8 +49,9 @@ export const styles = StyleSheet.create({
     marginTop: SPACING.xl,
     marginBottom: SPACING.xs,
   },
+  // Changed to minHeight for flexibility
   containerWithFixedContentHeight: {
-    height: 120,
+    minHeight: 120, // Ensures a minimum height, but allows content to expand
     justifyContent: "center",
     alignItems: "center",
   },
@@ -135,6 +136,11 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 1,
     borderColor: COLORS.border,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
   },
   instructionsText: {
     ...TYPOGRAPHY.bodyRegular,
@@ -143,17 +149,15 @@ export const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // Selected Cities Container
   fixedHeightForCityContainer: {
-    height: 150,
+    minHeight: 150,
     justifyContent: "center",
     alignItems: "center",
   },
   selectedCitiesContainer: {
-    height: 160,
     backgroundColor: COLORS.surface,
     borderRadius: SPACING.md,
-    paddingVertical: SPACING.lg,
+    paddingVertical: SPACING.sm,
     paddingHorizontal: SPACING.sm,
     marginBottom: SPACING.xl,
     shadowColor: COLORS.shadow,
@@ -164,6 +168,7 @@ export const styles = StyleSheet.create({
     zIndex: 10,
   },
   emptyStateContainer: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: SPACING.xl,
@@ -174,8 +179,9 @@ export const styles = StyleSheet.create({
     marginTop: SPACING.md,
   },
   cityIconsContainer: {
+    flex: 1,
     position: "relative",
-    minHeight: CITY_ICON_SIZE * 2,
+    minHeight: CITY_ICON_SIZE * 2 + SPACING.sm,
     zIndex: 100,
     elevation: 10,
   },
@@ -381,12 +387,13 @@ export const styles = StyleSheet.create({
   },
   searchResultItem: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: COLORS.divider,
+    backgroundColor: COLORS.surface,
+    borderRadius: SPACING.md,
+    padding: SPACING.md,
+    marginBottom: SPACING.sm,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   searchResultText: {
     ...TYPOGRAPHY.bodyRegular,

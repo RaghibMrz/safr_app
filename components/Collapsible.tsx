@@ -8,10 +8,11 @@ import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { FONT_SIZES } from "@/src/theme";
 
-export function Collapsible({
-  children,
-  title,
-}: PropsWithChildren & { title: string }) {
+type CollapsibleProps = PropsWithChildren<{
+  title: string;
+}>;
+
+export function Collapsible({ children, title }: CollapsibleProps) {
   const [isOpen, setIsOpen] = useState(false);
   const theme = useColorScheme() ?? "light";
 
