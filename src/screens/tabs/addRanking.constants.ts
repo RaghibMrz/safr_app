@@ -32,7 +32,7 @@ export const REMOVE_BUTTON_OFFSET = {
   y: -5,
 };
 
-export const LINE_Y_OFFSET = 350; // Adjust for city spawn area
+export const LINE_Y_OFFSET = 320; // Adjust for city spawn area
 
 // Initial city grid layout
 export const INITIAL_SPACING = SPACING.sm;
