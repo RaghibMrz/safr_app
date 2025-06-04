@@ -270,9 +270,10 @@ export default function AddRankingScreen() {
           position.flattenOffset();
 
           const absoluteY = gestureState.moveY;
-          const lineTop = rankingLineLayout.y - CITY_ICON_SIZE / 2;
+          const SNAP_PADDING = CITY_ICON_SIZE * 0.7;
+          const lineTop = rankingLineLayout.y - SNAP_PADDING;
           const lineBottom =
-            rankingLineLayout.y + rankingLineLayout.height + CITY_ICON_SIZE / 2;
+            rankingLineLayout.y + rankingLineLayout.height + SNAP_PADDING;
 
           if (absoluteY >= lineTop && absoluteY <= lineBottom) {
             const currentX = (position.x as any)._value;
