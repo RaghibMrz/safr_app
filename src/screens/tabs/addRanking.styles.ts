@@ -20,63 +20,209 @@ export const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  keyboardAvoidingContainer: {
+  scrollContainer: {
     flex: 1,
   },
-  screenContainer: {
-    flex: 1,
-    paddingVertical: SPACING.xxl,
+  contentContainer: {
     paddingHorizontal: SPACING.lg,
+    paddingBottom: SPACING.xl,
   },
 
-  // Header
-  header: {
-    paddingTop: Platform.OS === "ios" ? SPACING.sm : SPACING.lg,
-    paddingBottom: SPACING.lg,
+  // Modern Header
+  modernHeader: {
+    paddingTop: Platform.OS === "ios" ? SPACING.lg : SPACING.xl,
+    paddingBottom: SPACING.xl,
+    paddingHorizontal: SPACING.lg,
+    borderBottomLeftRadius: SPACING.xl,
+    borderBottomRightRadius: SPACING.xl,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    marginBottom: SPACING.xl,
   },
-  headerTitle: {
-    ...TYPOGRAPHY.h3,
-    color: COLORS.textPrimary,
+  modernHeaderTitle: {
+    ...TYPOGRAPHY.h4,
+    color: COLORS.white,
+    fontWeight: FONT_WEIGHTS.bold,
+    marginTop: SPACING.xl,
     marginBottom: SPACING.xs,
   },
-  headerSubtitle: {
-    ...TYPOGRAPHY.bodyRegular,
-    color: COLORS.textSecondary,
+  // Changed to minHeight for flexibility
+  containerWithFixedContentHeight: {
+    minHeight: 120, // Ensures a minimum height, but allows content to expand
+    justifyContent: "center",
+    alignItems: "center",
   },
 
-  // Search Button
-  searchButton: {
+  // Stats Row
+  statsRow: {
+    flexDirection: "row",
+    backgroundColor: COLORS.surface,
+    borderRadius: SPACING.md,
+    padding: SPACING.lg,
+    marginBottom: SPACING.lg,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: "center",
+  },
+  statValue: {
+    ...TYPOGRAPHY.h3,
+    color: COLORS.primary,
+    fontWeight: FONT_WEIGHTS.bold,
+  },
+  statLabel: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textMuted,
+    marginTop: SPACING.xs,
+  },
+  statDivider: {
+    width: 1,
+    backgroundColor: COLORS.divider,
+    marginHorizontal: SPACING.lg,
+  },
+
+  // Modern Search Button
+  modernSearchButton: {
+    backgroundColor: COLORS.surface,
+    borderRadius: SPACING.md,
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+    marginBottom: SPACING.lg,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  searchButtonContent: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.surface,
+    paddingVertical: SPACING.lg,
     paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-    borderRadius: SPACING.md,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    marginBottom: SPACING.xl,
-    shadowColor: COLORS.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
   },
   searchButtonText: {
+    ...TYPOGRAPHY.bodyMedium,
+    color: COLORS.textPrimary,
+    flex: 1,
+    marginLeft: SPACING.md,
+  },
+  searchButtonBadge: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
+    borderRadius: 12,
+  },
+  searchButtonBadgeText: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.white,
+    fontWeight: FONT_WEIGHTS.bold,
+  },
+
+  // Instructions Card
+  instructionsCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: SPACING.md,
+    padding: SPACING.lg,
+    marginBottom: SPACING.lg,
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  instructionsText: {
     ...TYPOGRAPHY.bodyRegular,
-    color: COLORS.placeholder,
+    color: COLORS.textSecondary,
+    marginLeft: SPACING.md,
+    flex: 1,
+  },
+
+  fixedHeightForCityContainer: {
+    minHeight: 150,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  selectedCitiesContainer: {
+    backgroundColor: COLORS.surface,
+    borderRadius: SPACING.md,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.sm,
+    marginBottom: SPACING.xl,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
+    zIndex: 10,
+  },
+  emptyStateContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: SPACING.xl,
+  },
+  emptyStateText: {
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.textMuted,
+    marginTop: SPACING.md,
+  },
+  cityIconsContainer: {
+    flex: 1,
+    position: "relative",
+    minHeight: CITY_ICON_SIZE * 2 + SPACING.sm,
+    zIndex: 100,
+    elevation: 10,
+  },
+
+  // Ranking Section
+  rankingSection: {
+    marginBottom: SPACING.xl,
+    zIndex: 1,
+    elevation: 1,
+  },
+  rankingSectionTitle: {
+    ...TYPOGRAPHY.bodyMedium,
+    color: COLORS.textSecondary,
+    textAlign: "center",
+    marginBottom: SPACING.md,
+    fontWeight: FONT_WEIGHTS.medium,
+  },
+
+  // Modern Submit Button
+  modernSubmitButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: SPACING.lg,
+    borderRadius: SPACING.md,
+    marginBottom: SPACING.xl,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  modernSubmitButtonText: {
+    ...TYPOGRAPHY.button,
+    color: COLORS.white,
+    fontWeight: FONT_WEIGHTS.bold,
+    fontSize: TYPOGRAPHY.sizes.lg,
     marginLeft: SPACING.sm,
   },
 
-  // Selected Cities Container
-  selectedCitiesContainer: {
-    minHeight: 100,
-    marginBottom: SPACING.xl,
-  },
-  cityIconsContainer: {
-    position: "relative",
-    minHeight: CITY_ICON_SIZE * 2, // Allow for at least 2 rows
-    // Removed flex properties as they don't work with absolute positioned children
-  },
+  // City Icon Styles (keeping original)
   cityIcon: {
     width: CITY_ICON_SIZE,
     height: CITY_ICON_SIZE,
@@ -106,9 +252,23 @@ export const styles = StyleSheet.create({
     fontSize: FONT_SIZES.xxs,
     fontWeight: FONT_WEIGHTS.bold,
   },
+  scoreContainer: {
+    position: "absolute",
+    bottom: -5,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    borderRadius: 10,
+    minWidth: 30,
+    alignItems: "center",
+  },
   removeCityButton: {
     backgroundColor: COLORS.error,
     borderRadius: 10,
+    shadowColor: COLORS.error,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
   },
 
   // Ranking Container - Horizontal Line
@@ -165,27 +325,6 @@ export const styles = StyleSheet.create({
     fontWeight: FONT_WEIGHTS.semiBold,
     width: 30,
     textAlign: "center",
-  },
-
-  // Submit Button
-  submitButton: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: SPACING.lg,
-    borderRadius: SPACING.md,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: SPACING.xl,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  submitButtonText: {
-    ...TYPOGRAPHY.button,
-    color: COLORS.textOnPrimary,
-    fontWeight: FONT_WEIGHTS.bold,
-    fontSize: TYPOGRAPHY.sizes.lg,
   },
 
   // Modal Styles
@@ -248,12 +387,13 @@ export const styles = StyleSheet.create({
   },
   searchResultItem: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: COLORS.divider,
+    backgroundColor: COLORS.surface,
+    borderRadius: SPACING.md,
+    padding: SPACING.md,
+    marginBottom: SPACING.sm,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   searchResultText: {
     ...TYPOGRAPHY.bodyRegular,
@@ -292,5 +432,150 @@ export const styles = StyleSheet.create({
     textAlign: "center",
     paddingVertical: SPACING.sm,
     marginBottom: SPACING.md,
+  },
+});
+
+export const searchModalStyles = StyleSheet.create({
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  modalContent: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: COLORS.background,
+    borderTopLeftRadius: SPACING.xl,
+    borderTopRightRadius: SPACING.xl,
+    paddingTop: SPACING.sm,
+    paddingBottom: SPACING.lg,
+    height: "70%",
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  modalHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: COLORS.textMuted,
+    borderRadius: 2,
+    alignSelf: "center",
+    marginBottom: SPACING.lg,
+    opacity: 0.3,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: SPACING.lg,
+    marginBottom: SPACING.lg,
+  },
+  modalTitle: {
+    ...TYPOGRAPHY.h3,
+    color: COLORS.textPrimary,
+    fontWeight: FONT_WEIGHTS.bold,
+  },
+  closeButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.surface,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  searchInputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.surface,
+    borderRadius: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    marginHorizontal: SPACING.lg,
+    marginBottom: SPACING.lg,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  modalSearchInput: {
+    flex: 1,
+    paddingVertical: SPACING.md,
+    marginLeft: SPACING.sm,
+    fontSize: TYPOGRAPHY.sizes.md,
+    color: COLORS.textPrimary,
+  },
+  searchResultsList: {
+    flex: 1,
+  },
+  listContent: {
+    paddingHorizontal: SPACING.lg,
+    paddingBottom: SPACING.xl,
+  },
+  searchResultItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.surface,
+    borderRadius: SPACING.md,
+    padding: SPACING.md,
+    marginBottom: SPACING.sm,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  cityIconSmall: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.primary,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  cityInitial: {
+    ...TYPOGRAPHY.bodyMedium,
+    color: COLORS.white,
+    fontSize: TYPOGRAPHY.sizes.lg,
+    fontWeight: FONT_WEIGHTS.bold,
+  },
+  cityInfo: {
+    flex: 1,
+    marginLeft: SPACING.md,
+  },
+  cityName: {
+    ...TYPOGRAPHY.bodyMedium,
+    color: COLORS.textPrimary,
+    fontWeight: FONT_WEIGHTS.semiBold,
+  },
+  countryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: SPACING.xs,
+  },
+  countryName: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textMuted,
+    marginLeft: SPACING.xs,
+  },
+  addButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.primary,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  noResultsContainer: {
+    alignItems: "center",
+    paddingVertical: SPACING["3xl"],
+  },
+  noResultsText: {
+    ...TYPOGRAPHY.bodyRegular,
+    color: COLORS.textMuted,
+    textAlign: "center",
+    marginTop: SPACING.lg,
+  },
+  noResultsSubtext: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textMuted,
+    textAlign: "center",
+    marginTop: SPACING.xs,
   },
 });

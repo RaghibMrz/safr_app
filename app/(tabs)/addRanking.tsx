@@ -15,10 +15,9 @@ import {
   Animated,
   Dimensions,
   Easing,
-  KeyboardAvoidingView,
   PanResponder,
-  Platform,
   SafeAreaView,
+  ScrollView,
   StatusBar,
   Text,
   TextInput,
@@ -33,61 +32,55 @@ import { SearchModal } from "../../src/components/ranking/SearchModal";
 import { RankingLine } from "../../src/components/ranking/RankingLine";
 import {
   CITY_COLORS,
-  CITY_ICON_SIZE, // Imported from constants
+  CITY_ICON_SIZE,
   FOCUS_INPUT_DELAY,
+  ICONS_PER_ROW,
+  INITIAL_SPACING,
   IOS_ADJUST_WIDGET,
   LINE_Y_OFFSET,
   MAX_CITIES_FETCH,
   MAX_SEARCH_RESULTS,
+  MAX_UNRANKED_CITIES,
   MODAL_ANIMATION_DURATION,
   RANKING_LINE_WIDTH,
   SEARCH_DEBOUNCE_DELAY,
 } from "../../src/screens/tabs/addRanking.constants";
 import { styles } from "../../src/screens/tabs/addRanking.styles";
-import { COLORS, SPACING } from "../../src/theme";
+import { COLORS, FONT_SIZES, SPACING } from "../../src/theme";
 import { City } from "@/src/types/city";
+import { DraggableCityData } from "@/src/types/ranking";
 
 const { height: screenHeight } = Dimensions.get("window");
-
-// Layout constants for initial city positioning
-const INITIAL_SPACING = SPACING.md;
-const ICONS_PER_ROW = 5; // Number of city icons to display per row in the unranked area
-const MAX_UNRANKED_CITIES = 10; // New constant: Maximum number of unranked cities allowed at one time
-
-interface DraggableCityData extends City {
-  score: number;
-  color: string;
-  position: { x: number; y: number };
-}
 
 export default function AddRankingScreen() {
   const authContext = useContext(AuthContext);
   const router = useRouter();
 
-  // Refs for managing animations and component instances
+  // Refs
   const searchInputRef = useRef<TextInput>(null);
   const modalOpacity = useRef(new Animated.Value(0)).current;
   const modalTranslateY = useRef(new Animated.Value(screenHeight)).current;
-  // Stores Animated.ValueXY for each city, allowing individual animation control
   const cityPositions = useRef<{ [key: number]: Animated.ValueXY }>({});
-  const colorIndex = useRef(0); // Used to cycle through CITY_COLORS
-  const rankingLineRef = useRef<View>(null); // Ref for the ranking line component
+  const colorIndex = useRef(0);
+  const rankingLineRef = useRef<View>(null);
 
-  // State variables
+  // Animation refs
+  const headerOpacity = useRef(new Animated.Value(1)).current;
+  const instructionOpacity = useRef(new Animated.Value(0)).current;
+  const buttonScale = useRef(new Animated.Value(0.95)).current;
+
+  // State
   const [allCities, setAllCities] = useState<City[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>("");
-  // Stores the list of selected cities, including their score and current position
   const [selectedCities, setSelectedCities] = useState<DraggableCityData[]>([]);
   const [isLoadingCities, setIsLoadingCities] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fetchError, setFetchError] = useState("");
   const [showSearchModal, setShowSearchModal] = useState(false);
-  // Tracks the ID of the city currently being dragged
   const [currentDraggingId, setCurrentDraggingId] = useState<number | null>(
     null
   );
-  // Stores the layout measurements of the ranking line for positioning calculations
   const [rankingLineLayout, setRankingLineLayout] = useState({
     x: 0,
     y: 0,
@@ -95,11 +88,27 @@ export default function AddRankingScreen() {
     height: 0,
   });
 
-  // Hook to clear state when navigating away from the screen
+  // Animate on focus
   useFocusEffect(
     useCallback(() => {
+      // Animate in
+      Animated.parallel([
+        Animated.timing(instructionOpacity, {
+          toValue: 1,
+          duration: 600,
+          delay: 300,
+          useNativeDriver: true,
+        }),
+        Animated.spring(buttonScale, {
+          toValue: 1,
+          friction: 8,
+          tension: 40,
+          useNativeDriver: true,
+        }),
+      ]).start();
+
       return () => {
-        // Reset all relevant state and refs to their initial values
+        // Reset when leaving
         setSelectedCities([]);
         setSearchTerm("");
         setDebouncedSearchTerm("");
@@ -111,7 +120,6 @@ export default function AddRankingScreen() {
     }, [])
   );
 
-  // Function to fetch cities from the API
   const fetchCities = useCallback(async () => {
     setIsLoadingCities(true);
     setFetchError("");
@@ -128,12 +136,10 @@ export default function AddRankingScreen() {
     }
   }, []);
 
-  // Effect to fetch cities when the component mounts
   useEffect(() => {
     fetchCities();
   }, [fetchCities]);
 
-  // Effect to debounce the search term input
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
@@ -142,10 +148,8 @@ export default function AddRankingScreen() {
     return () => clearTimeout(handler);
   }, [searchTerm]);
 
-  // Effect to manage modal open/close animations (fade and slide)
   useEffect(() => {
     if (showSearchModal) {
-      // Animate in: backdrop fades in, modal slides up
       Animated.parallel([
         Animated.timing(modalOpacity, {
           toValue: 1,
@@ -153,14 +157,13 @@ export default function AddRankingScreen() {
           useNativeDriver: true,
         }),
         Animated.timing(modalTranslateY, {
-          toValue: 0, // Slide up to its natural position (0 offset from bottom:0)
+          toValue: 0,
           duration: MODAL_ANIMATION_DURATION.OPEN,
-          easing: Easing.out(Easing.ease), // Smooth easing for slide in
+          easing: Easing.out(Easing.ease),
           useNativeDriver: true,
         }),
       ]).start();
     } else {
-      // Animate out: backdrop fades out, modal slides down
       Animated.parallel([
         Animated.timing(modalOpacity, {
           toValue: 0,
@@ -168,27 +171,25 @@ export default function AddRankingScreen() {
           useNativeDriver: true,
         }),
         Animated.timing(modalTranslateY, {
-          toValue: screenHeight, // Slide down off-screen
+          toValue: screenHeight,
           duration: MODAL_ANIMATION_DURATION.CLOSE,
-          easing: Easing.in(Easing.ease), // Smooth easing for slide out
+          easing: Easing.in(Easing.ease),
           useNativeDriver: true,
         }),
       ]).start();
     }
-  }, [showSearchModal, modalOpacity, modalTranslateY]); // Dependencies for the effect
+  }, [showSearchModal, modalOpacity, modalTranslateY]);
 
-  // Effect to focus the search input when the modal opens
   useEffect(() => {
     if (showSearchModal) {
       const timer = setTimeout(() => {
         searchInputRef.current?.focus();
-      }, FOCUS_INPUT_DELAY); // Small delay to ensure modal is rendered
+      }, FOCUS_INPUT_DELAY);
 
       return () => clearTimeout(timer);
     }
   }, [showSearchModal]);
 
-  // Memoized list of cities to display in the search modal based on search term
   const displayedCities = useMemo(() => {
     const trimmedSearch = debouncedSearchTerm.trim().toLowerCase();
     if (!trimmedSearch) return [];
@@ -202,12 +203,6 @@ export default function AddRankingScreen() {
       .slice(0, MAX_SEARCH_RESULTS);
   }, [allCities, debouncedSearchTerm]);
 
-  /**
-   * Recalculates and animates the positions of all unranked cities
-   * to fill any gaps created by ranked or removed cities.
-   * @param currentCities The current array of DraggableCityData to re-layout.
-   * @returns The updated array of DraggableCityData with new positions.
-   */
   const recalculateUnrankedPositions = useCallback(
     (currentCities: DraggableCityData[]) => {
       let newSelectedCities = [...currentCities];
@@ -247,45 +242,40 @@ export default function AddRankingScreen() {
         onMoveShouldSetPanResponder: () => true,
 
         onPanResponderGrant: () => {
-          setCurrentDraggingId(cityId); // Set the current dragging city
+          setCurrentDraggingId(cityId);
           const city = selectedCities.find((c) => c.id === cityId);
           if (city && cityPositions.current[cityId]) {
-            // Set the offset to the current position to prevent jumps
             cityPositions.current[cityId].setOffset({
               x: city.position.x,
               y: city.position.y,
             });
-            cityPositions.current[cityId].setValue({ x: 0, y: 0 }); // Reset value to 0 for relative movement
+            cityPositions.current[cityId].setValue({ x: 0, y: 0 });
           }
         },
 
-        // When dragging moves
         onPanResponderMove: (_, gestureState) => {
           const position = cityPositions.current[cityId];
           if (position) {
             position.setValue({
-              x: gestureState.dx, // Update position based on drag delta X
-              y: gestureState.dy, // Update position based on drag delta Y
+              x: gestureState.dx,
+              y: gestureState.dy,
             });
           }
         },
 
-        // When dragging ends
         onPanResponderRelease: (_, gestureState) => {
           const position = cityPositions.current[cityId];
           if (!position) return;
 
-          position.flattenOffset(); // Apply the offset to the value
+          position.flattenOffset();
 
-          const absoluteY = gestureState.moveY; // Get absolute Y position of release
-          // Define the vertical bounds of the ranking line
-          const lineTop = rankingLineLayout.y - CITY_ICON_SIZE / 2;
+          const absoluteY = gestureState.moveY;
+          const SNAP_PADDING = CITY_ICON_SIZE * 0.7;
+          const lineTop = rankingLineLayout.y - SNAP_PADDING;
           const lineBottom =
-            rankingLineLayout.y + rankingLineLayout.height + CITY_ICON_SIZE / 2;
+            rankingLineLayout.y + rankingLineLayout.height + SNAP_PADDING;
 
-          // Check if the city was released near the ranking line
           if (absoluteY >= lineTop && absoluteY <= lineBottom) {
-            // Calculate score based on X position relative to the ranking line
             const currentX = (position.x as any)._value;
             const normalizedX = Math.max(
               0,
@@ -293,14 +283,13 @@ export default function AddRankingScreen() {
             );
             const score = Math.round((normalizedX / RANKING_LINE_WIDTH) * 100);
 
-            // Calculate the Y position to snap the city onto the center of the line
             const snapY =
               rankingLineLayout.y +
               rankingLineLayout.height / 2 -
               CITY_ICON_SIZE / 2 -
               LINE_Y_OFFSET -
               IOS_ADJUST_WIDGET;
-            // Update city data in state
+
             setSelectedCities((prev) => {
               let updatedCities = prev.map((city) =>
                 city.id === cityId
@@ -308,21 +297,16 @@ export default function AddRankingScreen() {
                   : city
               );
 
-              // After updating the dragged city's score,
-              // recalculate positions for all unranked cities to fill gaps
               updatedCities = recalculateUnrankedPositions(updatedCities);
-
               return updatedCities;
             });
 
-            // Animate the dragged city to its final snapped position
             Animated.spring(position, {
               toValue: { x: normalizedX, y: snapY },
               useNativeDriver: false,
-              friction: 5, // Smooth snap animation
+              friction: 5,
             }).start();
           } else {
-            // If not released on the line, return to its last known position
             const city = selectedCities.find((c) => c.id === cityId);
             const targetX = city?.position.x || 0;
             const targetY = city?.position.y || 0;
@@ -333,24 +317,19 @@ export default function AddRankingScreen() {
             }).start();
           }
 
-          setCurrentDraggingId(null); // Reset dragging state
+          setCurrentDraggingId(null);
         },
       });
     },
-    [selectedCities, rankingLineLayout, recalculateUnrankedPositions] // Add recalculateUnrankedPositions as a dependency
+    [selectedCities, rankingLineLayout, recalculateUnrankedPositions]
   );
 
-  /**
-   * Helper function to close the search modal and clear search-related state.
-   * This centralizes duplicated logic for better maintainability.
-   */
   const resetSearchModalState = useCallback(() => {
     setShowSearchModal(false);
     setSearchTerm("");
     setDebouncedSearchTerm("");
   }, []);
 
-  // Handles selecting a city from the search results
   const handleSelectCity = useCallback(
     (city: City) => {
       if (selectedCities.find((c) => c.id === city.id)) {
@@ -358,15 +337,12 @@ export default function AddRankingScreen() {
           "Already Selected",
           `${city.name} is already in your ranking list.`
         );
-        // Use the new helper function
         resetSearchModalState();
         return;
       }
 
-      // Filter only currently unranked cities to check against the limit
       const unrankedCities = selectedCities.filter((c) => c.score === 0);
 
-      // Check if the limit of unranked cities has been reached
       if (unrankedCities.length >= MAX_UNRANKED_CITIES) {
         Alert.alert(
           "Limit Reached",
@@ -401,24 +377,18 @@ export default function AddRankingScreen() {
     [selectedCities, resetSearchModalState]
   );
 
-  // Handles removing a city from the selected list
   const handleRemoveCity = useCallback(
     (cityId: number) => {
-      // No confirmation alert as per previous instruction
-      delete cityPositions.current[cityId]; // Remove Animated.ValueXY for the removed city
+      delete cityPositions.current[cityId];
       setSelectedCities((prev) => {
         const filtered = prev.filter((c) => c.id !== cityId);
-
-        // Recalculate positions for remaining unranked cities after removal
         const updatedCities = recalculateUnrankedPositions(filtered);
-
         return updatedCities;
       });
     },
     [recalculateUnrankedPositions]
-  ); // Dependency: recalculateUnrankedPositions
+  );
 
-  // Handles submission of rankings to the API
   const handleSubmitRankings = useCallback(async () => {
     const citiesWithScores = selectedCities.filter((city) => city.score > 0);
 
@@ -454,11 +424,10 @@ export default function AddRankingScreen() {
           {
             text: "OK",
             onPress: () => {
-              // Clear all state after successful submission
               setSelectedCities([]);
               cityPositions.current = {};
               colorIndex.current = 0;
-              router.replace("/(tabs)/home"); // Navigate to home screen
+              router.replace("/(tabs)/home");
             },
           },
         ]
@@ -482,7 +451,6 @@ export default function AddRankingScreen() {
     });
   }, []);
 
-  // Render loading state if auth context is not available
   if (!authContext) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -493,7 +461,6 @@ export default function AddRankingScreen() {
     );
   }
 
-  // Render loading state while fetching cities
   if (isLoadingCities && allCities.length === 0) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -507,41 +474,104 @@ export default function AddRankingScreen() {
     );
   }
 
+  // Calculate stats
+  const rankedCount = selectedCities.filter((c) => c.score > 0).length;
+  const unrankedCount = selectedCities.filter((c) => c.score === 0).length;
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.keyboardAvoidingContainer}
+      <ScrollView
+        style={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
       >
-        <View style={styles.screenContainer}>
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>Rank Your Cities</Text>
-            <Text style={styles.headerSubtitle}>
-              Search for cities and drag them onto the line
-            </Text>
+        {/* Modern Header */}
+        <View
+          style={[styles.modernHeader, { backgroundColor: COLORS.primary }]}
+        >
+          <Animated.View style={{ opacity: headerOpacity }}>
+            <Text style={styles.modernHeaderTitle}>Rank Your Cities</Text>
+          </Animated.View>
+        </View>
+
+        <View style={styles.contentContainer}>
+          {/* Instructions/Stats Row */}
+          <View style={styles.containerWithFixedContentHeight}>
+            {rankedCount > 0 ? (
+              <View style={styles.statsRow}>
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{rankedCount}</Text>
+                  <Text style={styles.statLabel}>Ranked</Text>
+                </View>
+                <View style={styles.statDivider} />
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{unrankedCount}</Text>
+                  <Text style={styles.statLabel}>Unranked</Text>
+                </View>
+                <View style={styles.statDivider} />
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{selectedCities.length}</Text>
+                  <Text style={styles.statLabel}>Total</Text>
+                </View>
+              </View>
+            ) : (
+              <Animated.View
+                style={[
+                  styles.instructionsCard,
+                  { opacity: instructionOpacity },
+                ]}
+              >
+                <Ionicons
+                  name="information-circle"
+                  size={FONT_SIZES.xl3}
+                  color={COLORS.primary}
+                />
+                <Text style={styles.instructionsText}>
+                  Tap the search bar above to add cities, then drag them onto
+                  the ranking line below to rate them!
+                </Text>
+              </Animated.View>
+            )}
           </View>
 
           {/* Search Button */}
-          <TouchableOpacity
-            style={styles.searchButton}
-            onPress={() => setShowSearchModal(true)}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="search" size={20} color={COLORS.textSecondary} />
-            <Text style={styles.searchButtonText}>Search for a city...</Text>
-          </TouchableOpacity>
+          <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+            <TouchableOpacity
+              style={styles.modernSearchButton}
+              onPress={() => setShowSearchModal(true)}
+              activeOpacity={0.9}
+            >
+              <View style={styles.searchButtonContent}>
+                <Ionicons
+                  name="search"
+                  size={FONT_SIZES.xxl}
+                  color={COLORS.primary}
+                />
+                <Text style={styles.searchButtonText}>
+                  Search for cities...
+                </Text>
+                <View style={styles.searchButtonBadge}>
+                  <Text style={styles.searchButtonBadgeText}>
+                    {Math.max(0, MAX_UNRANKED_CITIES - unrankedCount)} left
+                  </Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          </Animated.View>
 
-          {/* Selected Cities Display Area */}
+          {/* Selected Cities */}
           <View style={styles.selectedCitiesContainer}>
             {selectedCities.length === 0 ? (
-              <Text style={styles.emptyText}>
-                No cities selected yet. Tap the search bar above to add cities.
-              </Text>
+              <View style={styles.emptyStateContainer}>
+                <Ionicons
+                  name="location-outline"
+                  size={FONT_SIZES.h1}
+                  color={COLORS.textMuted}
+                />
+                <Text style={styles.emptyStateText}>No cities added yet</Text>
+              </View>
             ) : (
-              // This View is the flex container for the DraggableCity components
               <View style={styles.cityIconsContainer}>
                 {selectedCities.map((city) => {
                   const panResponder = createPanResponder(city.id);
@@ -563,34 +593,52 @@ export default function AddRankingScreen() {
             )}
           </View>
 
-          {/* Ranking Line Component */}
-          <RankingLine
-            ref={rankingLineRef}
-            onLayout={handleRankingLineLayout}
-          />
+          {/* Ranking Line */}
+          <View>
+            <Text style={styles.rankingSectionTitle}>
+              Drag Cities Here to Rate
+            </Text>
+            <RankingLine
+              ref={rankingLineRef}
+              onLayout={handleRankingLineLayout}
+            />
+          </View>
 
           {/* Submit Button */}
           {selectedCities.length > 0 && (
             <TouchableOpacity
               style={[
-                styles.submitButton,
+                styles.modernSubmitButton,
                 isSubmitting && styles.buttonDisabled,
+                {
+                  backgroundColor:
+                    rankedCount > 0 ? COLORS.primary : COLORS.disabled,
+                },
               ]}
               onPress={handleSubmitRankings}
-              disabled={isSubmitting}
-              activeOpacity={0.8}
+              disabled={isSubmitting || rankedCount === 0}
+              activeOpacity={0.9}
             >
               {isSubmitting ? (
                 <ActivityIndicator size="small" color={COLORS.white} />
               ) : (
-                <Text style={styles.submitButtonText}>Submit Rankings</Text>
+                <>
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={FONT_SIZES.xl3}
+                    color={COLORS.white}
+                  />
+                  <Text style={styles.modernSubmitButtonText}>
+                    Submit {rankedCount} Ranking{rankedCount !== 1 ? "s" : ""}
+                  </Text>
+                </>
               )}
             </TouchableOpacity>
           )}
         </View>
-      </KeyboardAvoidingView>
+      </ScrollView>
 
-      {/* Search Modal Component */}
+      {/* Search Modal */}
       <SearchModal
         ref={searchInputRef}
         visible={showSearchModal}

@@ -2,7 +2,7 @@ export const COLORS = {
   // --- Core Palette ---
   background: "#F9F6F2", // A very light, warm, and sophisticated off-white/cream.
   surface: "#FFFFFF", // Pure white for cards, modals, and key UI elements for contrast.
-  primary: "#795548", // A deep, warm, earthy brown for primary actions or accents. (Replaces previous accent)
+  primary: "#795548", // A deep, warm, earthy brown for primary actions or accents.
   secondary: "#A1887F", // A softer, muted brown, complementary to primary.
 
   // --- Text ---
@@ -30,6 +30,15 @@ export const COLORS = {
   // --- Specific UI Elements (can be aliases or specific shades) ---
   inputBackground: "#FFFFFF", // Inputs will be on white surface.
   shadow: "rgba(0, 0, 0, 0.08)", // Soft, neutral shadow color.
+
+  // --- Score Colors ---
+  scoreHigh: "#4CAF50",
+  scoreMediumHigh: "#FFC107",
+  scoreMediumLow: "#FF9800",
+  scoreLow: "#F44336",
+
+  // --- Just Colors ---
+  whiteTransparent20: "rgba(255, 255, 255, 0.2)",
 };
 
 export type ColorTheme = typeof COLORS;

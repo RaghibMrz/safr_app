@@ -32,10 +32,10 @@ export const REMOVE_BUTTON_OFFSET = {
   y: -5,
 };
 
-export const LINE_Y_OFFSET = 170; // Adjust for city spawn area
+export const LINE_Y_OFFSET = 320;
 
 // Initial city grid layout
-export const INITIAL_SPACING = SPACING.md;
+export const INITIAL_SPACING = SPACING.sm;
 export const ICONS_PER_ROW = 5;
 
 // Colors for cities
@@ -56,3 +56,9 @@ export const MAX_UNRANKED_CITIES = 10;
 
 export const WIDGET_CITY_NAME_MAX_LENGTH = 3;
 export const WIDGET_REMOVE_BUTTON_SIZE = 20;
+
+export const Z_INDEX_DRAGGING = 1000;
+export const Z_INDEX_ITEM_SCORED = 100;
+export const Z_INDEX_ITEM_DEFAULT = 50;
+export const ELEVATION_DRAGGING = 20;
+export const ELEVATION_DEFAULT = 10;

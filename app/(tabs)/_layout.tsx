@@ -30,11 +30,10 @@ const TabBarIcon = ({
 };
 
 export default function TabLayout() {
-  // Adjust tab height to comfortably fit icons and labels
   const commonTabHeight =
     Platform.OS === "ios"
       ? SPACING["5xl"] + SPACING.xs
-      : SPACING["5xl"] + SPACING.sm; // iOS: 52, Android: 56
+      : SPACING["5xl"] + SPACING.sm;
 
   return (
     <Tabs
@@ -48,23 +47,21 @@ export default function TabLayout() {
             Platform.OS === "android" ? 0 : StyleSheet.hairlineWidth,
           borderTopColor: COLORS.border,
           height: commonTabHeight,
-          paddingTop: SPACING.xs, // Space above icon
-          paddingBottom: Platform.OS === "ios" ? SPACING.sm : SPACING.xs, // Space below label
+          paddingTop: SPACING.xs,
+          paddingBottom: Platform.OS === "ios" ? SPACING.sm : SPACING.xs,
           elevation: Platform.OS === "android" ? 8 : 0,
           shadowColor: COLORS.shadow,
           shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.08, // Softer shadow
+          shadowOpacity: 0.08,
           shadowRadius: 4,
         },
         tabBarLabelStyle: {
           fontFamily: TYPOGRAPHY.fontFamilyMedium,
-          fontSize: TYPOGRAPHY.sizes.xs, // 12px, keep it small for a clean look
+          fontSize: TYPOGRAPHY.sizes.xs,
           fontWeight: FONT_WEIGHTS.medium,
-          lineHeight: TYPOGRAPHY.sizes.xs * 1.2, // Ensure consistent line height
-          // On Android, labels can sometimes be too close to the bottom or icon.
-          // Adjusting marginBottom or even paddingBottom on tabBarItemStyle might be needed.
-          marginBottom: Platform.OS === "ios" ? 0 : SPACING.xs / 2, // Small bottom margin for Android label
-          marginTop: 0, // Prevent icon from pushing label too far down
+          lineHeight: TYPOGRAPHY.sizes.xs * 1.2,
+          marginBottom: Platform.OS === "ios" ? 0 : SPACING.xs / 2,
+          marginTop: 0,
         },
         tabBarItemStyle: {
           // Style for the individual tab item (icon + label container)
@@ -74,9 +71,9 @@ export default function TabLayout() {
         tabBarIconStyle: {
           // This style applies to the container view Expo Router wraps around your tabBarIcon component.
           // We don't want the icon to be pushed down by default top margin on Android.
-          marginTop: Platform.OS === "android" ? -SPACING.xs / 1.5 : 0, // Pull icon up slightly on Android
+          marginTop: Platform.OS === "android" ? -SPACING.xs / 1.5 : 0,
         },
-        tabBarShowLabel: true, // Explicitly show labels
+        tabBarShowLabel: true,
       }}
     >
       <Tabs.Screen
