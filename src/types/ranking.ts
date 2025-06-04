@@ -7,7 +7,7 @@ export interface UserCityRanking {
 }
 
 export interface SwipeableRankingItemProps {
-  item?: UserCityRanking;
+  item: UserCityRanking;
   onDelete: (item: UserCityRanking) => void;
   index: number;
 }
