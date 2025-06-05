@@ -1,42 +1,64 @@
 {
   "expo": {
-    "name": "safr_app",
-    "slug": "safr_app",
+    "name": "Safr",
+    "slug": "safr-travel-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "safrapp",
+    "icon": "./assets/images/safr_logo.png",
+    "scheme": "safr",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "privacy": "public",
+    "platforms": ["ios", "android"],
+    "description": "Rate and rank cities you've visited or want to visit. Discover your travel preferences with Safr.",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.raghibmrz.safr",
+      "buildNumber": "1",
+      "infoPlist": {
+        "UIBackgroundModes": ["background-fetch", "background-fetch"],
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/images/safr_logo.png",
+        "backgroundColor": "#795548"
       },
-      "edgeToEdgeEnabled": true
+      "package": "com.raghibmrz.safr",
+      "versionCode": 1,
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_NETWORK_STATE"
+      ]
     },
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/safr_logo.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/safr_logo.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
+          "backgroundColor": "#795548"
         }
       ]
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "owner": "raghibmrz",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "7c81a88c-50f7-4b79-9218-5cb3974e7eeb"
+      }
     }
   }
 }
