@@ -10,7 +10,7 @@ export const RANKING_LINE_WIDTH = screenWidth - SPACING.xl * 2 - 60; // Account 
 export const RANKING_LINE_HEIGHT = 80;
 export const MODAL_HEIGHT_RATIO = 0.4;
 export const IOS_ADJUST_MODAL = Platform.OS === "ios" ? 0.4 : 0;
-export const IOS_ADJUST_WIDGET = Platform.OS === "ios" ? 80 : 0;
+export const IOS_ADJUST_WIDGET = Platform.OS === "ios" ? 100 : 0;
 
 // Animation timings
 export const MODAL_ANIMATION_DURATION = {

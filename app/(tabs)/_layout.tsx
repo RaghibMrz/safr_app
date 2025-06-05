@@ -22,9 +22,6 @@ const TabBarIcon = ({
     // but can be used for additional styling like a focused indicator dot if desired later.
     <View style={styles.tabIconContainer}>
       <Ionicons name={name} size={focused ? size + 2 : size} color={color} />
-      {/* Example of a focused indicator dot (optional)
-      {focused && <View style={styles.tabFocusedIndicator} />}
-      */}
     </View>
   );
 };
@@ -71,7 +68,7 @@ export default function TabLayout() {
         tabBarIconStyle: {
           // This style applies to the container view Expo Router wraps around your tabBarIcon component.
           // We don't want the icon to be pushed down by default top margin on Android.
-          marginTop: Platform.OS === "android" ? -SPACING.xs / 1.5 : 0,
+          marginTop: -SPACING.sm / 1.5,
         },
         tabBarShowLabel: true,
       }}
@@ -79,7 +76,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="home"
         options={{
-          title: "Home", // Short, clear label
+          title: "Home",
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon
               name={focused ? "list-circle" : "list-circle-outline"}
@@ -124,7 +121,8 @@ export default function TabLayout() {
 const styles = StyleSheet.create({
   tabIconContainer: {
     alignItems: "center",
-    justifyContent: "center", // Center icon within its allocated space
+    justifyContent: "center",
+    paddingTop: SPACING.xxs,
     // The icon component itself will determine its size.
     // No flex: 1 needed here, as it might fight with the label for space.
   },

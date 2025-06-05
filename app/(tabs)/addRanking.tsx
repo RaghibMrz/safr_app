@@ -23,6 +23,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Platform,
 } from "react-native";
 
 import apiService from "../../src/api";
@@ -63,6 +64,7 @@ export default function AddRankingScreen() {
   const cityPositions = useRef<{ [key: number]: Animated.ValueXY }>({});
   const colorIndex = useRef(0);
   const rankingLineRef = useRef<View>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   // Animation refs
   const headerOpacity = useRef(new Animated.Value(1)).current;
@@ -87,6 +89,7 @@ export default function AddRankingScreen() {
     width: 0,
     height: 0,
   });
+  const [isScrollEnabled, setIsScrollEnabled] = useState(true);
 
   // Animate on focus
   useFocusEffect(
@@ -209,7 +212,6 @@ export default function AddRankingScreen() {
       let unrankedCount = 0;
 
       newSelectedCities.forEach((city, index) => {
-        // Changed condition to check for null score
         if (city.score === null) {
           const row = Math.floor(unrankedCount / ICONS_PER_ROW);
           const col = unrankedCount % ICONS_PER_ROW;
@@ -241,9 +243,11 @@ export default function AddRankingScreen() {
       return PanResponder.create({
         onStartShouldSetPanResponder: () => true,
         onMoveShouldSetPanResponder: () => true,
+        onShouldBlockNativeResponder: () => true,
 
         onPanResponderGrant: () => {
           setCurrentDraggingId(cityId);
+          setIsScrollEnabled(false); // Disable scroll when dragging starts
           const city = selectedCities.find((c) => c.id === cityId);
           if (city && cityPositions.current[cityId]) {
             cityPositions.current[cityId].setOffset({
@@ -265,6 +269,7 @@ export default function AddRankingScreen() {
         },
 
         onPanResponderRelease: (_, gestureState) => {
+          setIsScrollEnabled(true); // Re-enable scroll when dragging ends
           const position = cityPositions.current[cityId];
           if (!position) return;
 
@@ -294,7 +299,7 @@ export default function AddRankingScreen() {
               rankingLineLayout.height / 2 -
               CITY_ICON_SIZE / 2 -
               LINE_Y_OFFSET -
-              IOS_ADJUST_WIDGET;
+              (Platform.OS === "ios" ? IOS_ADJUST_WIDGET : 0);
 
             setSelectedCities((prev) => {
               let updatedCities = prev.map((city) =>
@@ -320,7 +325,6 @@ export default function AddRankingScreen() {
             if (absoluteY < unrankedAreaBottom) {
               setSelectedCities((prev) => {
                 let updatedCities = prev.map((c) =>
-                  // Set score to null when returning to unranked area
                   c.id === cityId ? { ...c, score: null } : c
                 );
                 updatedCities = recalculateUnrankedPositions(updatedCities);
@@ -361,7 +365,6 @@ export default function AddRankingScreen() {
         return;
       }
 
-      // Filter for cities that have score: null (unranked)
       const unrankedCities = selectedCities.filter((c) => c.score === null);
 
       if (unrankedCities.length >= MAX_UNRANKED_CITIES) {
@@ -386,7 +389,7 @@ export default function AddRankingScreen() {
 
       const newCity: DraggableCityData = {
         ...city,
-        score: null, // Initialize score to null for unranked
+        score: null,
         color: CITY_COLORS[colorIndex.current % CITY_COLORS.length],
         position: { x: initialX, y: initialY },
       };
@@ -411,7 +414,6 @@ export default function AddRankingScreen() {
   );
 
   const handleSubmitRankings = useCallback(async () => {
-    // Filter for cities where score is a number (i.e., not null)
     const citiesWithScores = selectedCities.filter(
       (city) => city.score !== null
     );
@@ -428,7 +430,6 @@ export default function AddRankingScreen() {
     try {
       const results = await Promise.allSettled(
         citiesWithScores.map((city) =>
-          // Type assertion needed here because TypeScript doesn't know score is not null inside map
           apiService.addOrUpdateRanking(city.id, city.score as number)
         )
       );
@@ -499,186 +500,206 @@ export default function AddRankingScreen() {
     );
   }
 
-  // Calculate stats using null/not null
   const rankedCount = selectedCities.filter((c) => c.score !== null).length;
   const unrankedCount = selectedCities.filter((c) => c.score === null).length;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
-
-      <ScrollView
-        style={styles.scrollContainer}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Modern Header */}
-        <View
-          style={[styles.modernHeader, { backgroundColor: COLORS.primary }]}
+    <View style={{ flex: 1, backgroundColor: COLORS.background }}>
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor={COLORS.primary}
+        translucent={Platform.OS === "ios"}
+      />
+      <SafeAreaView
+        style={[styles.safeArea, { flex: 0, backgroundColor: COLORS.primary }]}
+      />
+      <SafeAreaView style={[styles.safeArea, { flex: 1 }]}>
+        <ScrollView
+          ref={scrollViewRef}
+          style={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
+          scrollEnabled={isScrollEnabled}
+          bounces={!currentDraggingId}
         >
-          <Animated.View style={{ opacity: headerOpacity }}>
-            <Text style={styles.modernHeaderTitle}>Rank Your Cities</Text>
-          </Animated.View>
-        </View>
-
-        <View style={styles.contentContainer}>
-          {/* Instructions/Stats Row */}
-          <View style={styles.containerWithFixedContentHeight}>
-            {rankedCount > 0 ? (
-              <View style={styles.statsRow}>
-                <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{rankedCount}</Text>
-                  <Text style={styles.statLabel}>Ranked</Text>
-                </View>
-                <View style={styles.statDivider} />
-                <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{unrankedCount}</Text>
-                  <Text style={styles.statLabel}>Unranked</Text>
-                </View>
-                <View style={styles.statDivider} />
-                <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{selectedCities.length}</Text>
-                  <Text style={styles.statLabel}>Total</Text>
-                </View>
-              </View>
-            ) : (
-              <Animated.View
+          {/* Modern Header */}
+          <View
+            style={[
+              styles.modernHeader,
+              { backgroundColor: COLORS.primary },
+              Platform.OS === "ios" && { marginTop: -44 }, // Extend into safe area on iOS
+            ]}
+          >
+            <Animated.View style={{ opacity: headerOpacity }}>
+              <Text
                 style={[
-                  styles.instructionsCard,
-                  { opacity: instructionOpacity },
+                  styles.modernHeaderTitle,
+                  Platform.OS === "ios" && { marginTop: 44 }, // Push text back down on iOS
                 ]}
               >
-                <Ionicons
-                  name="information-circle"
-                  size={FONT_SIZES.xl3}
-                  color={COLORS.primary}
-                />
-                <Text style={styles.instructionsText}>
-                  Tap the search bar above to add cities, then drag them onto
-                  the ranking line below to rate them!
-                </Text>
-              </Animated.View>
-            )}
+                Rank Your Cities
+              </Text>
+            </Animated.View>
           </View>
 
-          {/* Search Button */}
-          <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
-            <TouchableOpacity
-              style={styles.modernSearchButton}
-              onPress={() => setShowSearchModal(true)}
-              activeOpacity={0.9}
-            >
-              <View style={styles.searchButtonContent}>
-                <Ionicons
-                  name="search"
-                  size={FONT_SIZES.xxl}
-                  color={COLORS.primary}
-                />
-                <Text style={styles.searchButtonText}>
-                  Search for cities...
-                </Text>
-                <View style={styles.searchButtonBadge}>
-                  <Text style={styles.searchButtonBadgeText}>
-                    {/* Display based on unrankedCount, which now uses null */}
-                    {Math.max(0, MAX_UNRANKED_CITIES - unrankedCount)} left
-                  </Text>
+          <View style={styles.contentContainer}>
+            {/* Instructions/Stats Row */}
+            <View style={styles.containerWithFixedContentHeight}>
+              {rankedCount > 0 ? (
+                <View style={styles.statsRow}>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statValue}>{rankedCount}</Text>
+                    <Text style={styles.statLabel}>Ranked</Text>
+                  </View>
+                  <View style={styles.statDivider} />
+                  <View style={styles.statItem}>
+                    <Text style={styles.statValue}>{unrankedCount}</Text>
+                    <Text style={styles.statLabel}>Unranked</Text>
+                  </View>
+                  <View style={styles.statDivider} />
+                  <View style={styles.statItem}>
+                    <Text style={styles.statValue}>
+                      {selectedCities.length}
+                    </Text>
+                    <Text style={styles.statLabel}>Total</Text>
+                  </View>
                 </View>
-              </View>
-            </TouchableOpacity>
-          </Animated.View>
+              ) : (
+                <Animated.View
+                  style={[
+                    styles.instructionsCard,
+                    { opacity: instructionOpacity },
+                  ]}
+                >
+                  <Ionicons
+                    name="information-circle"
+                    size={FONT_SIZES.xl3}
+                    color={COLORS.primary}
+                  />
+                  <Text style={styles.instructionsText}>
+                    Tap the search bar above to add cities, then drag them onto
+                    the ranking line below to rate them!
+                  </Text>
+                </Animated.View>
+              )}
+            </View>
 
-          {/* Selected Cities */}
-          <View style={styles.selectedCitiesContainer}>
-            {selectedCities.length === 0 ? (
-              <View style={styles.emptyStateContainer}>
-                <Ionicons
-                  name="location-outline"
-                  size={FONT_SIZES.h1}
-                  color={COLORS.textMuted}
-                />
-                <Text style={styles.emptyStateText}>No cities added yet</Text>
-              </View>
-            ) : (
-              <View style={styles.cityIconsContainer}>
-                {selectedCities.map((city) => {
-                  const panResponder = createPanResponder(city.id);
-                  const position = cityPositions.current[city.id];
-                  const isDragging = currentDraggingId === city.id;
+            {/* Search Button */}
+            <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+              <TouchableOpacity
+                style={styles.modernSearchButton}
+                onPress={() => setShowSearchModal(true)}
+                activeOpacity={0.9}
+              >
+                <View style={styles.searchButtonContent}>
+                  <Ionicons
+                    name="search"
+                    size={FONT_SIZES.xxl}
+                    color={COLORS.primary}
+                  />
+                  <Text style={styles.searchButtonText}>
+                    Search for cities...
+                  </Text>
+                  <View style={styles.searchButtonBadge}>
+                    <Text style={styles.searchButtonBadgeText}>
+                      {Math.max(0, MAX_UNRANKED_CITIES - unrankedCount)} left
+                    </Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            </Animated.View>
 
-                  return (
-                    <DraggableCity
-                      key={city.id}
-                      city={city}
-                      position={position}
-                      isDragging={isDragging}
-                      panResponder={panResponder.panHandlers}
-                      onRemove={handleRemoveCity}
+            {/* Selected Cities */}
+            <View style={styles.selectedCitiesContainer}>
+              {selectedCities.length === 0 ? (
+                <View style={styles.emptyStateContainer}>
+                  <Ionicons
+                    name="location-outline"
+                    size={FONT_SIZES.h1}
+                    color={COLORS.textMuted}
+                  />
+                  <Text style={styles.emptyStateText}>No cities added yet</Text>
+                </View>
+              ) : (
+                <View style={styles.cityIconsContainer}>
+                  {selectedCities.map((city) => {
+                    const panResponder = createPanResponder(city.id);
+                    const position = cityPositions.current[city.id];
+                    const isDragging = currentDraggingId === city.id;
+
+                    return (
+                      <DraggableCity
+                        key={city.id}
+                        city={city}
+                        position={position}
+                        isDragging={isDragging}
+                        panResponder={panResponder.panHandlers}
+                        onRemove={handleRemoveCity}
+                      />
+                    );
+                  })}
+                </View>
+              )}
+            </View>
+
+            {/* Ranking Line */}
+            <View>
+              <Text style={styles.rankingSectionTitle}>
+                Drag Cities Here to Rate
+              </Text>
+              <RankingLine
+                ref={rankingLineRef}
+                onLayout={handleRankingLineLayout}
+              />
+            </View>
+
+            {/* Submit Button */}
+            {selectedCities.length > 0 && (
+              <TouchableOpacity
+                style={[
+                  styles.modernSubmitButton,
+                  isSubmitting && styles.buttonDisabled,
+                  {
+                    backgroundColor:
+                      rankedCount > 0 ? COLORS.primary : COLORS.disabled,
+                  },
+                ]}
+                onPress={handleSubmitRankings}
+                disabled={isSubmitting || rankedCount === 0}
+                activeOpacity={0.9}
+              >
+                {isSubmitting ? (
+                  <ActivityIndicator size="small" color={COLORS.white} />
+                ) : (
+                  <>
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={FONT_SIZES.xl3}
+                      color={COLORS.white}
                     />
-                  );
-                })}
-              </View>
+                    <Text style={styles.modernSubmitButtonText}>
+                      Submit {rankedCount} Ranking{rankedCount !== 1 ? "s" : ""}
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
             )}
           </View>
+        </ScrollView>
 
-          {/* Ranking Line */}
-          <View>
-            <Text style={styles.rankingSectionTitle}>
-              Drag Cities Here to Rate
-            </Text>
-            <RankingLine
-              ref={rankingLineRef}
-              onLayout={handleRankingLineLayout}
-            />
-          </View>
-
-          {/* Submit Button */}
-          {selectedCities.length > 0 && (
-            <TouchableOpacity
-              style={[
-                styles.modernSubmitButton,
-                isSubmitting && styles.buttonDisabled,
-                {
-                  backgroundColor:
-                    // Button enabled if at least one city is ranked (score !== null)
-                    rankedCount > 0 ? COLORS.primary : COLORS.disabled,
-                },
-              ]}
-              onPress={handleSubmitRankings}
-              // Button disabled if submitting or no cities are ranked
-              disabled={isSubmitting || rankedCount === 0}
-              activeOpacity={0.9}
-            >
-              {isSubmitting ? (
-                <ActivityIndicator size="small" color={COLORS.white} />
-              ) : (
-                <>
-                  <Ionicons
-                    name="checkmark-circle"
-                    size={FONT_SIZES.xl3}
-                    color={COLORS.white}
-                  />
-                  <Text style={styles.modernSubmitButtonText}>
-                    Submit {rankedCount} Ranking{rankedCount !== 1 ? "s" : ""}
-                  </Text>
-                </>
-              )}
-            </TouchableOpacity>
-          )}
-        </View>
-      </ScrollView>
-
-      {/* Search Modal */}
-      <SearchModal
-        ref={searchInputRef}
-        visible={showSearchModal}
-        searchTerm={searchTerm}
-        onSearchTermChange={setSearchTerm}
-        onClose={handleModalClose}
-        onSelectCity={handleSelectCity}
-        displayedCities={displayedCities}
-        isLoading={isLoadingCities}
-        modalOpacity={modalOpacity}
-        modalTranslateY={modalTranslateY}
-      />
-    </SafeAreaView>
+        {/* Search Modal */}
+        <SearchModal
+          ref={searchInputRef}
+          visible={showSearchModal}
+          searchTerm={searchTerm}
+          onSearchTermChange={setSearchTerm}
+          onClose={handleModalClose}
+          onSelectCity={handleSelectCity}
+          displayedCities={displayedCities}
+          isLoading={isLoadingCities}
+          modalOpacity={modalOpacity}
+          modalTranslateY={modalTranslateY}
+        />
+      </SafeAreaView>
+    </View>
   );
 }
