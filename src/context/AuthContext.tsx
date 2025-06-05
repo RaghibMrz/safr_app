@@ -37,39 +37,56 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   const validateToken = useCallback(async (): Promise<boolean> => {
-    const token = await AsyncStorage.getItem("userToken");
-    if (!token) return false;
-
     try {
+      const token = await AsyncStorage.getItem("userToken");
+      if (!token) {
+        return false;
+      }
+
       const info = await apiService.getCurrentUser(token);
       setUserInfo(info);
       await AsyncStorage.setItem("userInfo", JSON.stringify(info));
       return true;
     } catch (error) {
       console.error("Token validation failed:", error);
-      await logout();
+      // Don't call logout here to avoid infinite loops
+      // Just clear the invalid token
+      await AsyncStorage.removeItem("userToken");
+      await AsyncStorage.removeItem("userInfo");
+      setUserToken(null);
+      setUserInfo(null);
       return false;
     }
-  }, [logout]);
+  }, []);
 
   const login = async (username: string, password: string): Promise<void> => {
     setIsLoading(true);
     try {
-      console.log("Login attempt in AuthContext:", username, password);
+      console.log("Login attempt in AuthContext:", username);
       const token = await apiService.loginUser(username, password);
-      console.log("Login successful in AuthContext:", token);
+      console.log("Login successful in AuthContext");
+
       if (token) {
         setUserToken(token);
         await AsyncStorage.setItem("userToken", token);
 
-        const info = await apiService.getCurrentUser(token);
-        setUserInfo(info);
-        await AsyncStorage.setItem("userInfo", JSON.stringify(info));
+        try {
+          const info = await apiService.getCurrentUser(token);
+          setUserInfo(info);
+          await AsyncStorage.setItem("userInfo", JSON.stringify(info));
+        } catch (userError) {
+          console.error("Failed to fetch user info after login:", userError);
+          // Still allow login to proceed even if user info fetch fails
+        }
       } else {
         throw new Error("Login successful, but no token received.");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login error in AuthContext:", error);
+      // Make sure to clear any partial state
+      setUserToken(null);
+      setUserInfo(null);
+      // Re-throw the error so the login screen can display it
       throw error;
     } finally {
       setIsLoading(false);
@@ -102,17 +119,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (token) {
         setUserToken(token);
         if (storedUserInfoString) {
-          setUserInfo(JSON.parse(storedUserInfoString) as UserInfo);
+          try {
+            setUserInfo(JSON.parse(storedUserInfoString) as UserInfo);
+          } catch (parseError) {
+            console.error("Error parsing stored user info:", parseError);
+          }
         }
-        await validateToken();
+
+        // Validate token in the background, but don't block the UI
+        validateToken().catch((error) => {
+          console.error("Background token validation failed:", error);
+        });
       }
     } catch (e) {
       console.error("Error checking login status from AsyncStorage:", e);
-      await logout();
     } finally {
       setIsLoading(false);
     }
-  }, [logout, validateToken]);
+  }, [validateToken]);
 
   useEffect(() => {
     isLoggedIn();

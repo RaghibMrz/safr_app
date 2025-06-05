@@ -43,19 +43,31 @@ export default function LoginScreen() {
   const { login } = authContext;
 
   const handleLogin = async () => {
-    if (!username.trim() || !password) {
-      setError("Username and password are required.");
+    // Clear any previous errors
+    setError("");
+
+    // Basic validation
+    if (!username.trim()) {
+      setError("Please enter your username.");
       return;
     }
-    setError("");
+
+    if (!password) {
+      setError("Please enter your password.");
+      return;
+    }
+
     setLoading(true);
     try {
-      await login(username, password);
+      await login(username.trim(), password);
+      // Navigation will be handled by the root layout based on auth state
     } catch (e: any) {
-      setError(
+      console.error("Login error:", e);
+      // Display the error message from the API or a fallback message
+      const errorMessage =
         e.message ||
-          "Login failed. Please check your credentials and try again."
-      );
+        "Login failed. Please check your credentials and try again.";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -82,26 +94,31 @@ export default function LoginScreen() {
             placeholder="Username"
             placeholderTextColor={COLORS.placeholder}
             value={username}
-            onChangeText={setUsername}
+            onChangeText={(text) => {
+              setUsername(text);
+              if (error) setError(""); // Clear error when user starts typing
+            }}
             autoCapitalize="none"
             textContentType="username"
             autoComplete="username"
             returnKeyType="next"
-            onSubmitEditing={() => {
-              /* Optionally focus next input */
-            }}
+            editable={!loading}
           />
           <TextInput
             style={styles.input}
             placeholder="Password"
             placeholderTextColor={COLORS.placeholder}
             value={password}
-            onChangeText={setPassword}
+            onChangeText={(text) => {
+              setPassword(text);
+              if (error) setError(""); // Clear error when user starts typing
+            }}
             secureTextEntry
             textContentType="password"
             autoComplete="password"
             returnKeyType="done"
             onSubmitEditing={handleLogin}
+            editable={!loading}
           />
 
           {loading ? (
@@ -125,6 +142,7 @@ export default function LoginScreen() {
             <TouchableOpacity
               style={styles.switchAuthLinkContainer}
               activeOpacity={0.7}
+              disabled={loading}
             >
               <Text style={styles.linkText}>
                 Don't have an account?{" "}
