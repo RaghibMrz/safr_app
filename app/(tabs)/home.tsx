@@ -1,7 +1,13 @@
 // app/(tabs)/home.tsx
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
-import React, { useCallback, useContext, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+  useRef,
+} from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -21,10 +27,12 @@ import { SwipeableRankingItem } from "../../src/components/home/SwipeableRanking
 import { styles } from "../../src/screens/tabs/home.styles";
 import { COLORS, FONT_SIZES, SPACING } from "../../src/theme";
 import { UserCityRanking } from "@/src/types/ranking";
+import { IOS_STATUS_BAR_ADJUSTMENT } from "@/src/screens/tabs/home.constants";
 
 export default function HomeScreen() {
   const authContext = useContext(AuthContext);
   const router = useRouter();
+  const flatListRef = useRef<FlatList>(null);
 
   const [rankings, setRankings] = useState<UserCityRanking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -33,6 +41,9 @@ export default function HomeScreen() {
 
   if (!authContext) {
     console.error("AuthContext is not available in HomeScreen.");
+    // It's generally better to handle this within the main return,
+    // potentially after setting StatusBar and SafeAreaViews for consistent screen structure.
+    // However, keeping original logic for this specific case.
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.screenContainer}>
@@ -52,6 +63,7 @@ export default function HomeScreen() {
       return;
     }
     setError("");
+    // setIsLoading(true); // Consider setting loading true at the start of fetch
     try {
       const data = await apiService.getUserRankings();
       setRankings(data);
@@ -68,6 +80,7 @@ export default function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      setIsLoading(true); // Set loading true when screen focuses and starts fetching
       fetchRankings();
     }, [fetchRankings])
   );
@@ -80,7 +93,6 @@ export default function HomeScreen() {
   const handleDeleteRanking = async (rankingItem: UserCityRanking) => {
     try {
       await apiService.deleteRanking(rankingItem.city.id);
-      // Optimistic update
       setRankings((prev) => prev.filter((r) => r.id !== rankingItem.id));
     } catch (e: any) {
       if (!e.message?.includes("Authentication expired")) {
@@ -88,7 +100,6 @@ export default function HomeScreen() {
           "Error",
           `Failed to delete ranking for ${rankingItem.city.name}.`
         );
-        // Refetch to restore correct state
         fetchRankings();
       }
     }
@@ -109,11 +120,8 @@ export default function HomeScreen() {
     ]);
   };
 
-  // Calculate statistics
   const averageScore = useMemo(() => {
-    if (rankings.length === 0) {
-      return 0;
-    }
+    if (rankings.length === 0) return 0;
     const totalScore = rankings.reduce((sum, r) => sum + r.personal_score, 0);
     return totalScore / rankings.length;
   }, [rankings]);
@@ -132,11 +140,16 @@ export default function HomeScreen() {
       {/* User Header */}
       <View style={styles.headerContainer}>
         <View
-          style={[styles.gradientHeader, { backgroundColor: COLORS.primary }]}
+          style={[
+            styles.gradientHeader,
+            { backgroundColor: COLORS.primary },
+            // Apply negative margin to pull header up into status bar area on iOS
+            Platform.OS === "ios" && { marginTop: -IOS_STATUS_BAR_ADJUSTMENT },
+          ]}
         >
-          <View style={styles.headerContent}>
+          <View style={[styles.headerContent]}>
             <View style={styles.userInfo}>
-              <Text style={styles.greetingText}>Welcome back,</Text>
+              <Text style={styles.greetingText}>welcome back</Text>
               <Text style={styles.usernameText}>
                 {userInfo?.username || "Traveler"}
               </Text>
@@ -164,7 +177,6 @@ export default function HomeScreen() {
             <Text style={styles.statNumber}>{rankings.length}</Text>
             <Text style={styles.statLabel}>Cities Ranked</Text>
           </View>
-
           <View style={styles.statCard}>
             <Ionicons
               name="stats-chart"
@@ -174,8 +186,6 @@ export default function HomeScreen() {
             <Text style={styles.statNumber}>{averageScore.toFixed(0)}</Text>
             <Text style={styles.statLabel}>Average Score</Text>
           </View>
-
-          {/* todo: change this to store the average objective score instead */}
           {highestRated && (
             <View style={styles.statCard}>
               <Ionicons
@@ -219,14 +229,14 @@ export default function HomeScreen() {
   );
 
   const renderEmpty = () => {
-    if (isLoading) {
+    if (isLoading && rankings.length === 0) {
+      // Show loader only if rankings are empty initially
       return (
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={COLORS.primary} />
         </View>
       );
     }
-
     if (error) {
       return (
         <View style={styles.emptyContainer}>
@@ -242,58 +252,70 @@ export default function HomeScreen() {
         </View>
       );
     }
-
-    return (
-      <View style={styles.emptyContainer}>
-        <Ionicons
-          name="map-outline"
-          size={FONT_SIZES.logoExtraLarge}
-          color={COLORS.textMuted}
-        />
-        <Text style={styles.emptyTitle}>No Cities Ranked Yet</Text>
-        <Text style={styles.emptySubtitle}>
-          Start exploring and ranking cities you've visited or want to visit!
-        </Text>
-        <TouchableOpacity
-          style={styles.emptyActionButton}
-          onPress={handleNavigateToAddRanking}
-        >
-          <Text style={styles.emptyActionText}>Add Your First City</Text>
-        </TouchableOpacity>
-      </View>
-    );
+    // Only show empty state if not loading and no error, and rankings are empty
+    if (!isLoading && !error && rankings.length === 0) {
+      return (
+        <View style={styles.emptyContainer}>
+          <Ionicons
+            name="map-outline"
+            size={FONT_SIZES.logoExtraLarge}
+            color={COLORS.textMuted}
+          />
+          <Text style={styles.emptyTitle}>No Cities Ranked Yet</Text>
+          <Text style={styles.emptySubtitle}>
+            Start exploring and ranking cities you've visited or want to visit!
+          </Text>
+          <TouchableOpacity
+            style={styles.emptyActionButton}
+            onPress={handleNavigateToAddRanking}
+          >
+            <Text style={styles.emptyActionText}>Add Your First City</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+    return null; // Return null if loading but rankings are already present (e.g. during refresh)
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
-
-      <FlatList
-        data={rankings}
-        renderItem={({ item, index }) => (
-          <SwipeableRankingItem
-            item={item}
-            index={index}
-            onDelete={handleDeleteRanking}
-          />
-        )}
-        keyExtractor={(item) => item.id.toString()}
-        ListHeaderComponent={renderHeader}
-        ListEmptyComponent={renderEmpty}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={[COLORS.primary]}
-            tintColor={COLORS.primary}
-          />
-        }
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={[
-          styles.listContent,
-          rankings.length === 0 && styles.emptyListContent,
-        ]}
+    <View style={{ flex: 1, backgroundColor: COLORS.background }}>
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor={COLORS.primary}
+        translucent={Platform.OS === "ios"} // Make status bar translucent on iOS
       />
-    </SafeAreaView>
+      {/* This SafeAreaView colors the area behind the status bar on iOS */}
+      <SafeAreaView style={{ flex: 0, backgroundColor: COLORS.primary }} />
+      {/* This SafeAreaView handles the main content area */}
+      <SafeAreaView style={[styles.safeArea, { flex: 1 }]}>
+        <FlatList
+          ref={flatListRef}
+          data={rankings}
+          renderItem={({ item, index }) => (
+            <SwipeableRankingItem
+              item={item}
+              index={index}
+              onDelete={handleDeleteRanking}
+            />
+          )}
+          keyExtractor={(item) => item.id.toString()}
+          ListHeaderComponent={renderHeader}
+          ListEmptyComponent={renderEmpty}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[COLORS.primary]}
+              tintColor={COLORS.primary}
+            />
+          }
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[
+            styles.listContent,
+            rankings.length === 0 && !isLoading && styles.emptyListContent,
+          ]}
+        />
+      </SafeAreaView>
+    </View>
   );
 }

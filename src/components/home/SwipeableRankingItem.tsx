@@ -8,6 +8,7 @@ import {
   Text,
   TouchableOpacity,
   Dimensions,
+  Platform,
 } from "react-native";
 import { COLORS, FONT_SIZES } from "../../theme";
 import { styles } from "@/src/screens/tabs/home.styles";
@@ -23,27 +24,49 @@ const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const SWIPE_THRESHOLD = -120;
 const DELETE_BUTTON_WIDTH = 80;
 
-export const SwipeableRankingItem: React.FC<SwipeableRankingItemProps> = ({
-  item,
-  onDelete,
-  index,
-}) => {
+export const SwipeableRankingItem: React.FC<
+  SwipeableRankingItemProps & {
+    onSwipeStart?: () => void;
+    onSwipeEnd?: () => void;
+  }
+> = ({ item, onDelete, index, onSwipeStart, onSwipeEnd }) => {
   const translateX = useRef(new Animated.Value(0)).current;
   const deleteButtonOpacity = useRef(new Animated.Value(0)).current;
-  const itemOpacity = useRef(new Animated.Value(1)).current;
+  const itemOpacity = useRef(new Animated.Value(0)).current;
 
-  // Simple fade-in on mount
-  Animated.timing(itemOpacity, {
-    toValue: 1,
-    duration: ANIMATION_DURATION_FADE,
-    delay: index * STAGGER_DELAY_MS,
-    useNativeDriver: true,
-  }).start();
+  // Fade-in on mount
+  React.useEffect(() => {
+    Animated.timing(itemOpacity, {
+      toValue: 1,
+      duration: ANIMATION_DURATION_FADE,
+      delay: index * STAGGER_DELAY_MS,
+      useNativeDriver: true,
+    }).start();
+  }, []);
 
   const panResponder = useRef(
     PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
       onMoveShouldSetPanResponder: (_, gestureState) => {
-        return Math.abs(gestureState.dx) > PAN_ACTIVATION_OFFSET;
+        // More permissive for iOS
+        const isHorizontalSwipe =
+          Math.abs(gestureState.dx) > Math.abs(gestureState.dy);
+        const hasMinimumDistance =
+          Math.abs(gestureState.dx) > PAN_ACTIVATION_OFFSET;
+        return isHorizontalSwipe && hasMinimumDistance;
+      },
+      onMoveShouldSetPanResponderCapture: (_, gestureState) => {
+        // Capture horizontal swipes to prevent scroll interference
+        const isHorizontalSwipe =
+          Math.abs(gestureState.dx) > Math.abs(gestureState.dy);
+        const hasMinimumDistance =
+          Math.abs(gestureState.dx) > PAN_ACTIVATION_OFFSET;
+        return isHorizontalSwipe && hasMinimumDistance;
+      },
+      onPanResponderTerminationRequest: () => false,
+      onShouldBlockNativeResponder: () => true,
+      onPanResponderGrant: () => {
+        onSwipeStart?.();
       },
       onPanResponderMove: (_, gestureState) => {
         if (gestureState.dx < 0) {
@@ -57,17 +80,18 @@ export const SwipeableRankingItem: React.FC<SwipeableRankingItemProps> = ({
         }
       },
       onPanResponderRelease: (_, gestureState) => {
+        onSwipeEnd?.();
         if (gestureState.dx < SWIPE_THRESHOLD) {
           // Swipe far enough - trigger delete
           Animated.parallel([
             Animated.timing(translateX, {
               toValue: -SCREEN_WIDTH,
-              duration: 300,
+              duration: 250,
               useNativeDriver: true,
             }),
             Animated.timing(itemOpacity, {
               toValue: 0,
-              duration: 300,
+              duration: 250,
               useNativeDriver: true,
             }),
           ]).start(() => {
@@ -79,6 +103,7 @@ export const SwipeableRankingItem: React.FC<SwipeableRankingItemProps> = ({
             Animated.spring(translateX, {
               toValue: 0,
               friction: 7,
+              tension: 40,
               useNativeDriver: true,
             }),
             Animated.timing(deleteButtonOpacity, {

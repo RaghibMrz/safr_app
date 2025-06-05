@@ -1,6 +1,6 @@
 // src/components/ranking/DraggableCity.tsx
 import { Ionicons } from "@expo/vector-icons";
-import { Animated, Text, TouchableOpacity, View } from "react-native";
+import { Animated, Text, TouchableOpacity, View, Platform } from "react-native";
 
 import {
   CITY_ICON_SIZE,
@@ -51,6 +51,8 @@ export const DraggableCity: React.FC<DraggableCityProps> = ({
           height: CITY_ICON_SIZE,
         },
       ]}
+      // Prevent this view from interfering with ScrollView on iOS
+      pointerEvents={isDragging ? "box-none" : "auto"}
     >
       <View
         style={[
@@ -62,6 +64,15 @@ export const DraggableCity: React.FC<DraggableCityProps> = ({
             borderColor: isRanked
               ? getScoreColor(city.score as number)
               : "transparent",
+            // Add shadow for better visibility on iOS
+            ...(Platform.OS === "ios" && isDragging
+              ? {
+                  shadowColor: COLORS.shadow,
+                  shadowOffset: { width: 0, height: 8 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 10,
+                }
+              : {}),
           },
         ]}
         {...panResponder}
@@ -92,10 +103,20 @@ export const DraggableCity: React.FC<DraggableCityProps> = ({
               { translateX: REMOVE_BUTTON_OFFSET.x },
               { translateY: REMOVE_BUTTON_OFFSET.y },
             ],
+            // Better touch target on iOS
+            ...(Platform.OS === "ios"
+              ? {
+                  width: 24,
+                  height: 24,
+                  borderRadius: 12,
+                  justifyContent: "center",
+                  alignItems: "center",
+                }
+              : {}),
           },
         ]}
         onPress={() => onRemove(city.id)}
-        hitSlop={{ top: 5, bottom: 5, left: 5, right: 5 }}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
         <Ionicons
           name="close-circle"

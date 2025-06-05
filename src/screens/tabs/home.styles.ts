@@ -26,7 +26,7 @@ export const styles = StyleSheet.create({
     elevation: 8,
   },
   headerContent: {
-    marginTop: SPACING.lg,
+    marginTop: Platform.OS === "ios" ? SPACING.xxs : SPACING.md,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
