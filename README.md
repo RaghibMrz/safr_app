@@ -36,4 +36,7 @@ npm install
 npx expo start
 ```
 
-Please make sure you set the API_BASE_URL in the api.ts file to the correct URL of your backend.
+# Make sure to define
+
+EXPO_PUBLIC_API_BASE_URL in .env.development and .env.production
+DATABASE_URL in .env.development and .env.production
