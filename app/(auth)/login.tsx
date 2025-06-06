@@ -14,14 +14,19 @@ import {
 } from "react-native";
 
 import { AuthContext } from "../../src/context/AuthContext";
+import { Alert } from "../../src/components/common/Alert";
 import { styles } from "../../src/screens/auth/login.styles";
 import { COLORS } from "../../src/theme";
 
 export default function LoginScreen() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
+  const [alertType, setAlertType] = useState<"success" | "error" | "info">(
+    "error"
+  );
 
   const authContext = useContext(AuthContext);
   const router = useRouter();
@@ -42,18 +47,21 @@ export default function LoginScreen() {
   }
   const { login } = authContext;
 
-  const handleLogin = async () => {
-    // Clear any previous errors
-    setError("");
+  const showAlert = (message: string, type: "success" | "error" | "info") => {
+    setAlertMessage(message);
+    setAlertType(type);
+    setAlertVisible(true);
+  };
 
+  const handleLogin = async () => {
     // Basic validation
     if (!username.trim()) {
-      setError("Please enter your username.");
+      showAlert("Please enter your username.", "error");
       return;
     }
 
     if (!password) {
-      setError("Please enter your password.");
+      showAlert("Please enter your password.", "error");
       return;
     }
 
@@ -63,11 +71,11 @@ export default function LoginScreen() {
       // Navigation will be handled by the root layout based on auth state
     } catch (e: any) {
       console.error("Login error:", e);
-      // Display the error message from the API or a fallback message
+      // Display the error message from the API
       const errorMessage =
         e.message ||
         "Login failed. Please check your credentials and try again.";
-      setError(errorMessage);
+      showAlert(errorMessage, "error");
     } finally {
       setLoading(false);
     }
@@ -79,6 +87,14 @@ export default function LoginScreen() {
         barStyle={Platform.OS === "ios" ? "dark-content" : "dark-content"}
         backgroundColor={COLORS.background}
       />
+
+      <Alert
+        message={alertMessage}
+        type={alertType}
+        visible={alertVisible}
+        onDismiss={() => setAlertVisible(false)}
+      />
+
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardAvoidingContainer}
@@ -87,17 +103,12 @@ export default function LoginScreen() {
           <Text style={styles.logoText}>safr</Text>
           <Text style={styles.title}>welcome traveller</Text>
 
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
           <TextInput
             style={styles.input}
             placeholder="Username"
             placeholderTextColor={COLORS.placeholder}
             value={username}
-            onChangeText={(text) => {
-              setUsername(text);
-              if (error) setError(""); // Clear error when user starts typing
-            }}
+            onChangeText={setUsername}
             autoCapitalize="none"
             textContentType="username"
             autoComplete="username"
@@ -109,10 +120,7 @@ export default function LoginScreen() {
             placeholder="Password"
             placeholderTextColor={COLORS.placeholder}
             value={password}
-            onChangeText={(text) => {
-              setPassword(text);
-              if (error) setError(""); // Clear error when user starts typing
-            }}
+            onChangeText={setPassword}
             secureTextEntry
             textContentType="password"
             autoComplete="password"
