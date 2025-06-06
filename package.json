@@ -17,8 +17,8 @@
     "build:ios:production": "dotenv -e .env.production -- eas build -p ios --profile production",
     "build:android:development:local": "dotenv -e .env.development -- eas build --local -p android --profile development",
     "build:android:development": "dotenv -e .env.development -- eas build -p android --profile development",
-    "build:android:preview:local": "dotenv -e .env.development -- eas build --local -p android --profile preview",
-    "build:android:preview": "dotenv -e .env.development -- eas build -p android --profile preview",
+    "build:android:preview:local": "dotenv -e .env.production -- eas build --local -p android --profile preview",
+    "build:android:preview": "dotenv -e .env.production -- eas build -p android --profile preview",
     "build:android:production:local": "dotenv -e .env.production -- eas build --local -p android --profile production",
     "build:android:production": "dotenv -e .env.production -- eas build -p android --profile production"
   },
