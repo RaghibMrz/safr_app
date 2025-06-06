@@ -24,55 +24,61 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
 
   const logout = useCallback(async (): Promise<void> => {
-    setIsLoading(true);
-    setUserToken(null);
-    setUserInfo(null);
     try {
+      setUserToken(null);
+      setUserInfo(null);
       await AsyncStorage.removeItem("userToken");
       await AsyncStorage.removeItem("userInfo");
     } catch (e) {
       console.error("Error removing auth data from AsyncStorage:", e);
     }
-    setIsLoading(false);
   }, []);
 
   const validateToken = useCallback(async (): Promise<boolean> => {
-    const token = await AsyncStorage.getItem("userToken");
-    if (!token) return false;
-
     try {
+      const token = await AsyncStorage.getItem("userToken");
+      if (!token) {
+        return false;
+      }
+
       const info = await apiService.getCurrentUser(token);
       setUserInfo(info);
       await AsyncStorage.setItem("userInfo", JSON.stringify(info));
       return true;
     } catch (error) {
       console.error("Token validation failed:", error);
-      await logout();
       return false;
     }
-  }, [logout]);
+  }, []);
 
   const login = async (username: string, password: string): Promise<void> => {
-    setIsLoading(true);
     try {
-      console.log("Login attempt in AuthContext:", username, password);
+      console.log("Login attempt in AuthContext:", username);
       const token = await apiService.loginUser(username, password);
-      console.log("Login successful in AuthContext:", token);
+      console.log("Login successful in AuthContext");
+
       if (token) {
         setUserToken(token);
         await AsyncStorage.setItem("userToken", token);
 
-        const info = await apiService.getCurrentUser(token);
-        setUserInfo(info);
-        await AsyncStorage.setItem("userInfo", JSON.stringify(info));
+        try {
+          const info = await apiService.getCurrentUser(token);
+          setUserInfo(info);
+          await AsyncStorage.setItem("userInfo", JSON.stringify(info));
+        } catch (userError) {
+          console.error("Failed to fetch user info after login:", userError);
+          // Still allow login to proceed even if user info fetch fails
+        }
       } else {
         throw new Error("Login successful, but no token received.");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login error in AuthContext:", error);
+      // Make sure to clear any partial state
+      setUserToken(null);
+      setUserInfo(null);
+      // Re-throw the error so the login screen can display it
       throw error;
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -81,42 +87,71 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     email: string,
     password: string
   ): Promise<void> => {
-    setIsLoading(true);
     try {
       const user = await apiService.signupUser(username, email, password);
       console.log("Signup successful in AuthContext:", user);
     } catch (error) {
       console.error("Signup error in AuthContext:", error);
       throw error;
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  const isLoggedIn = useCallback(async (): Promise<void> => {
+  const checkAuthStatus = useCallback(async (): Promise<void> => {
+    console.log("Checking auth status...");
     try {
-      setIsLoading(true);
       const token = await AsyncStorage.getItem("userToken");
       const storedUserInfoString = await AsyncStorage.getItem("userInfo");
 
       if (token) {
+        console.log("Token found in storage");
         setUserToken(token);
+
         if (storedUserInfoString) {
-          setUserInfo(JSON.parse(storedUserInfoString) as UserInfo);
+          try {
+            const storedUserInfo = JSON.parse(storedUserInfoString) as UserInfo;
+            setUserInfo(storedUserInfo);
+            console.log("User info loaded from storage");
+          } catch (parseError) {
+            console.error("Error parsing stored user info:", parseError);
+          }
         }
-        await validateToken();
+
+        // Validate token in the background
+        validateToken()
+          .then((isValid) => {
+            if (!isValid) {
+              console.log("Token is invalid, clearing auth state");
+              // Clear auth state if token is invalid
+              setUserToken(null);
+              setUserInfo(null);
+              AsyncStorage.removeItem("userToken");
+              AsyncStorage.removeItem("userInfo");
+            }
+          })
+          .catch((error) => {
+            console.error("Error validating token:", error);
+          });
+      } else {
+        console.log("No token found in storage");
       }
     } catch (e) {
-      console.error("Error checking login status from AsyncStorage:", e);
-      await logout();
+      console.error("Error checking auth status:", e);
     } finally {
+      // CRITICAL: Always set loading to false
+      console.log("Setting isLoading to false");
       setIsLoading(false);
     }
-  }, [logout, validateToken]);
+  }, [validateToken]);
 
   useEffect(() => {
-    isLoggedIn();
+    checkAuthStatus();
   }, []);
+
+  // Set up the logout callback for the API service
+  useEffect(() => {
+    const { setAuthLogoutCallback } = require("../api");
+    setAuthLogoutCallback(logout);
+  }, [logout]);
 
   return (
     <AuthContext.Provider

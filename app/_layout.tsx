@@ -28,24 +28,39 @@ function InitialLayout() {
   }, [authContext?.logout]);
 
   useEffect(() => {
-    if (authContext?.isLoading) {
+    if (!authContext) {
+      console.error("AuthContext not available");
+      return;
+    }
+
+    if (authContext.isLoading) {
       return;
     }
 
     const inAuthGroup = segments[0] === "(auth)";
+    const isAtRoot = segments[0] === "_sitemap" || !segments[0];
 
-    if (authContext?.userToken) {
+    if (authContext.userToken) {
+      // User is signed in
       if (inAuthGroup) {
         router.replace("/(tabs)/home");
+      } else if (isAtRoot) {
+        // User is at root, redirect to tabs
+        router.replace("/(tabs)/home");
       }
+      // If already in tabs, do nothing
     } else {
-      if (!inAuthGroup) {
+      // User is not signed in
+      if (!inAuthGroup && !isAtRoot) {
+        router.replace("/(auth)/login");
+      } else if (isAtRoot) {
         router.replace("/(auth)/login");
       }
     }
   }, [authContext?.isLoading, authContext?.userToken, segments, router]);
 
-  if (authContext?.isLoading) {
+  // Show loading screen while auth state is being determined
+  if (!authContext || authContext.isLoading) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <StatusBar
@@ -64,6 +79,7 @@ function InitialLayout() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="index" />
     </Stack>
   );
 }

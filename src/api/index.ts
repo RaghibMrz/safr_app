@@ -8,9 +8,8 @@ import {
 } from "../types/dtos";
 
 // --- Configuration ---
-// Use your deployed API URL here
-// const API_BASE_URL = "http://192.168.1.42:8000";
-const API_BASE_URL = "https://safr-backend-t4t5dvi7da-nw.a.run.app";
+const API_BASE_URL = "http://192.168.1.42:8000";
+// const API_BASE_URL = "https://safr-backend-t4t5dvi7da-nw.a.run.app";
 
 // Store the logout callback
 let authLogoutCallback: (() => Promise<void>) | null = null;
@@ -47,29 +46,65 @@ const getAuthToken = async (): Promise<string | null> => {
 const apiService = {
   // --- Auth Endpoints ---
   loginUser: async (username: string, password: string): Promise<string> => {
-    console.log("Login attempt in apiService:", username, password);
+    console.log("Login attempt in apiService:", username);
     console.log("API_BASE_URL:", API_BASE_URL);
-    const response = await fetch(`${API_BASE_URL}/token`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        Accept: "application/json",
-      },
-      body: `username=${encodeURIComponent(
-        username
-      )}&password=${encodeURIComponent(password)}`,
-    });
 
-    console.log("Login response in apiService:", response);
+    try {
+      const response = await fetch(`${API_BASE_URL}/token`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Accept: "application/json",
+        },
+        body: `username=${encodeURIComponent(
+          username
+        )}&password=${encodeURIComponent(password)}`,
+      });
 
-    if (!response.ok) {
-      const errorData = await response
-        .json()
-        .catch(() => ({ detail: "Login request failed" }));
-      throw new Error(errorData.detail || "Login failed");
+      console.log("Login response status:", response.status);
+
+      if (!response.ok) {
+        let errorMessage = "Login failed";
+
+        try {
+          const errorData = await response.json();
+          console.log("Error data from server:", errorData);
+
+          // Handle specific error cases
+          if (response.status === 401 || response.status === 400) {
+            errorMessage = "Invalid username or password";
+          } else if (errorData.detail) {
+            errorMessage = errorData.detail;
+          }
+        } catch (jsonError) {
+          console.error("Failed to parse error response:", jsonError);
+          if (response.status === 401 || response.status === 400) {
+            errorMessage = "Invalid username or password";
+          }
+        }
+
+        throw new Error(errorMessage);
+      }
+
+      const data: TokenResponse = await response.json();
+      return data.access_token;
+    } catch (error) {
+      // If it's a network error, provide a more specific message
+      if (
+        error instanceof TypeError &&
+        error.message === "Network request failed"
+      ) {
+        throw new Error(
+          "Cannot connect to server. Please check your internet connection."
+        );
+      }
+      // Re-throw the error if it's already an Error with a message
+      if (error instanceof Error) {
+        throw error;
+      }
+      // Otherwise, throw a generic error
+      throw new Error("Login failed. Please try again.");
     }
-    const data: TokenResponse = await response.json();
-    return data.access_token;
   },
 
   signupUser: async (
@@ -77,22 +112,56 @@ const apiService = {
     email: string,
     password: string
   ): Promise<UserInfo> => {
-    const response = await fetch(`${API_BASE_URL}/users/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify({ username, email, password }),
-    });
+    try {
+      const response = await fetch(`${API_BASE_URL}/users/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ username, email, password }),
+      });
 
-    if (!response.ok) {
-      const errorData = await response
-        .json()
-        .catch(() => ({ detail: "Signup request failed" }));
-      throw new Error(errorData.detail || "Signup failed");
+      if (!response.ok) {
+        let errorMessage = "Signup failed";
+
+        try {
+          const errorData = await response.json();
+          if (response.status === 400 && errorData.detail) {
+            // Handle specific validation errors
+            if (typeof errorData.detail === "string") {
+              errorMessage = errorData.detail;
+            } else if (Array.isArray(errorData.detail)) {
+              // Handle array of validation errors
+              errorMessage = errorData.detail
+                .map((err: any) => err.msg || err)
+                .join(", ");
+            }
+          } else if (response.status === 409) {
+            errorMessage = "Username or email already exists";
+          }
+        } catch (jsonError) {
+          console.error("Failed to parse error response:", jsonError);
+        }
+
+        throw new Error(errorMessage);
+      }
+
+      return (await response.json()) as UserInfo;
+    } catch (error) {
+      if (
+        error instanceof TypeError &&
+        error.message === "Network request failed"
+      ) {
+        throw new Error(
+          "Cannot connect to server. Please check your internet connection."
+        );
+      }
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error("Signup failed. Please try again.");
     }
-    return (await response.json()) as UserInfo;
   },
 
   getCurrentUser: async (token?: string): Promise<UserInfo> => {
