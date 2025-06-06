@@ -128,21 +128,51 @@ const apiService = {
 
         try {
           const errorData = await response.json();
+          console.log("Signup error response:", errorData);
+
           if (response.status === 400 && errorData.detail) {
-            // Handle specific validation errors
+            // Handle validation errors
             if (typeof errorData.detail === "string") {
               errorMessage = errorData.detail;
             } else if (Array.isArray(errorData.detail)) {
-              // Handle array of validation errors
-              errorMessage = errorData.detail
-                .map((err: any) => err.msg || err)
-                .join(", ");
+              // FastAPI validation errors come as an array
+              const errors = errorData.detail.map((err: any) => {
+                if (err.msg) {
+                  // Handle field-specific errors
+                  if (err.loc && err.loc.includes("username")) {
+                    return "Username " + err.msg;
+                  } else if (err.loc && err.loc.includes("email")) {
+                    return "Email " + err.msg;
+                  } else if (err.loc && err.loc.includes("password")) {
+                    return "Password " + err.msg;
+                  }
+                  return err.msg;
+                }
+                return err;
+              });
+              errorMessage = errors.join(". ");
             }
           } else if (response.status === 409) {
             errorMessage = "Username or email already exists";
+          } else if (response.status === 422) {
+            // Unprocessable Entity - validation error
+            if (errorData.detail && Array.isArray(errorData.detail)) {
+              const fieldErrors = errorData.detail.map((err: any) => {
+                const field = err.loc?.[err.loc.length - 1] || "Field";
+                return `${field}: ${err.msg}`;
+              });
+              errorMessage = fieldErrors.join(". ");
+            } else {
+              errorMessage = "Invalid data provided. Please check your inputs.";
+            }
           }
         } catch (jsonError) {
           console.error("Failed to parse error response:", jsonError);
+          if (response.status === 409) {
+            errorMessage = "Username or email already exists";
+          } else if (response.status === 400) {
+            errorMessage = "Invalid signup information provided";
+          }
         }
 
         throw new Error(errorMessage);

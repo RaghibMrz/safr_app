@@ -63,15 +63,30 @@ export default function SignupScreen() {
       return;
     }
 
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      showAlert("Please enter a valid email address.", "error");
+      return;
+    }
+
     if (!password) {
       showAlert("Please enter a password.", "error");
+      return;
+    }
+
+    if (password.length < 6) {
+      showAlert("Password must be at least 6 characters long.", "error");
       return;
     }
 
     setLoading(true);
     try {
       await signup(username.trim(), email.trim(), password);
-      showAlert("Account created successfully! Please log in.", "success");
+      showAlert(
+        "Account created successfully! Redirecting to login...",
+        "success"
+      );
       // Wait a bit before navigating to login
       setTimeout(() => {
         router.replace("/(auth)/login");
