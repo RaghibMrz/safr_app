@@ -8,8 +8,9 @@ import {
 } from "../types/dtos";
 
 // --- Configuration ---
-const API_BASE_URL = "http://192.168.1.42:8000";
+// const API_BASE_URL = "http://192.168.1.42:8000";
 // const API_BASE_URL = "https://safr-backend-t4t5dvi7da-nw.a.run.app";
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 // Store the logout callback
 let authLogoutCallback: (() => Promise<void>) | null = null;
