@@ -37,8 +37,7 @@ import {
   FOCUS_INPUT_DELAY,
   ICONS_PER_ROW,
   INITIAL_SPACING,
-  IOS_ADJUST_WIDGET,
-  LINE_Y_OFFSET,
+  LIFT_PROPORTION,
   MAX_CITIES_FETCH,
   MAX_SEARCH_RESULTS,
   MAX_UNRANKED_CITIES,
@@ -65,6 +64,9 @@ export default function AddRankingScreen() {
   const colorIndex = useRef(0);
   const rankingLineRef = useRef<View>(null);
   const scrollViewRef = useRef<ScrollView>(null);
+
+  const selectedCitiesContainerRef = useRef<View>(null);
+  const dragContextRef = useRef({ lineY: 0, lineHeight: 0, containerY: 0 });
 
   // Animation refs
   const headerOpacity = useRef(new Animated.Value(1)).current;
@@ -246,8 +248,22 @@ export default function AddRankingScreen() {
         onShouldBlockNativeResponder: () => true,
 
         onPanResponderGrant: () => {
+          // Measure the absolute positions of the line and the container
+          rankingLineRef.current?.measure((x, y, w, h, pageX, pageY) => {
+            selectedCitiesContainerRef.current?.measure(
+              (cx, cy, cw, ch, cPageX, cPageY) => {
+                // Store the measured values in our ref for synchronous access
+                dragContextRef.current = {
+                  lineY: pageY,
+                  lineHeight: h,
+                  containerY: cPageY,
+                };
+              }
+            );
+          });
+
           setCurrentDraggingId(cityId);
-          setIsScrollEnabled(false); // Disable scroll when dragging starts
+          setIsScrollEnabled(false);
           const city = selectedCities.find((c) => c.id === cityId);
           if (city && cityPositions.current[cityId]) {
             cityPositions.current[cityId].setOffset({
@@ -261,68 +277,70 @@ export default function AddRankingScreen() {
         onPanResponderMove: (_, gestureState) => {
           const position = cityPositions.current[cityId];
           if (position) {
-            position.setValue({
-              x: gestureState.dx,
-              y: gestureState.dy,
-            });
+            position.setValue({ x: gestureState.dx, y: gestureState.dy });
           }
         },
 
         onPanResponderRelease: (_, gestureState) => {
-          setIsScrollEnabled(true); // Re-enable scroll when dragging ends
+          setIsScrollEnabled(true);
           const position = cityPositions.current[cityId];
           if (!position) return;
 
           position.flattenOffset();
 
+          const { lineY, lineHeight, containerY } = dragContextRef.current;
           const absoluteY = gestureState.moveY;
+
+          // Define the snap area using the dynamically measured line position
           const SNAP_PADDING = CITY_ICON_SIZE * 0.7;
-          const lineTop = rankingLineLayout.y - SNAP_PADDING;
-          const lineBottom =
-            rankingLineLayout.y + rankingLineLayout.height + SNAP_PADDING * 4;
+          const lineTop = lineY - SNAP_PADDING;
+          const lineBottom = lineY + lineHeight + SNAP_PADDING * 2;
 
           if (absoluteY >= lineTop && absoluteY <= lineBottom) {
             const currentX = (position.x as any)._value;
-
             const normalizedX = Math.max(
               0,
               Math.min(currentX, RANKING_LINE_WIDTH)
             );
-
             const score = Math.max(
               0,
               Math.round((normalizedX / RANKING_LINE_WIDTH) * 100)
             );
 
-            const snapY =
-              rankingLineLayout.y +
-              rankingLineLayout.height / 2 -
-              CITY_ICON_SIZE / 2 -
-              LINE_Y_OFFSET -
-              (Platform.OS === "ios" ? IOS_ADJUST_WIDGET : 0);
+            // --- THE NEW, RELATIVE CALCULATION ---
+            // Calculate the line's center Y relative to the container's top
+            const relativeLineCenterY = lineY + lineHeight / 2 - containerY;
+
+            // Position the icon's center over the line's center
+            let snapY = relativeLineCenterY - CITY_ICON_SIZE / 2;
+
+            // --- PROPORTIONAL ADJUSTMENT ---
+            // Lift the icon up by a fraction of its own height.
+            // This ensures the visual offset is consistent on all screen densities.
+            snapY -= CITY_ICON_SIZE * LIFT_PROPORTION;
+            // --------------------------------
 
             setSelectedCities((prev) => {
               let updatedCities = prev.map((city) =>
                 city.id === cityId
-                  ? { ...city, score, position: { x: normalizedX, y: snapY } }
+                  ? { ...city, score, position: { x: normalizedX, y: snapY } } // Use the adjusted snapY
                   : city
               );
-
               updatedCities = recalculateUnrankedPositions(updatedCities);
               return updatedCities;
             });
 
             Animated.spring(position, {
-              toValue: { x: normalizedX, y: snapY },
+              toValue: { x: normalizedX, y: snapY }, // Use the adjusted snapY
               useNativeDriver: false,
               friction: 5,
             }).start();
           } else {
+            // This logic remains largely the same but uses measured values
             const city = selectedCities.find((c) => c.id === cityId);
+            const unrankedAreaBottom = lineY - CITY_ICON_SIZE;
 
-            const unrankedAreaBottom = rankingLineLayout.y - CITY_ICON_SIZE;
-
-            if (absoluteY < unrankedAreaBottom) {
+            if (gestureState.moveY < unrankedAreaBottom) {
               setSelectedCities((prev) => {
                 let updatedCities = prev.map((c) =>
                   c.id === cityId ? { ...c, score: null } : c
@@ -340,12 +358,12 @@ export default function AddRankingScreen() {
               }).start();
             }
           }
-
           setCurrentDraggingId(null);
         },
       });
     },
-    [selectedCities, rankingLineLayout, recalculateUnrankedPositions]
+    // Keep dependencies, they haven't changed
+    [selectedCities, recalculateUnrankedPositions]
   );
 
   const resetSearchModalState = useCallback(() => {
@@ -609,7 +627,10 @@ export default function AddRankingScreen() {
             </Animated.View>
 
             {/* Selected Cities */}
-            <View style={styles.selectedCitiesContainer}>
+            <View
+              ref={selectedCitiesContainerRef}
+              style={styles.selectedCitiesContainer}
+            >
               {selectedCities.length === 0 ? (
                 <View style={styles.emptyStateContainer}>
                   <Ionicons

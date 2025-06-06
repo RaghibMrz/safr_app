@@ -103,16 +103,6 @@ export const DraggableCity: React.FC<DraggableCityProps> = ({
               { translateX: REMOVE_BUTTON_OFFSET.x },
               { translateY: REMOVE_BUTTON_OFFSET.y },
             ],
-            // Better touch target on iOS
-            ...(Platform.OS === "ios"
-              ? {
-                  width: 24,
-                  height: 24,
-                  borderRadius: 12,
-                  justifyContent: "center",
-                  alignItems: "center",
-                }
-              : {}),
           },
         ]}
         onPress={() => onRemove(city.id)}
