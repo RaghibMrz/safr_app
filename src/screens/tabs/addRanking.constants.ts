@@ -10,7 +10,6 @@ export const RANKING_LINE_WIDTH = screenWidth - SPACING.xl * 2 - 60; // Account 
 export const RANKING_LINE_HEIGHT = 80;
 export const MODAL_HEIGHT_RATIO = 0.4;
 export const IOS_ADJUST_MODAL = Platform.OS === "ios" ? 0.4 : 0;
-export const IOS_ADJUST_WIDGET = Platform.OS === "ios" ? 100 : 0;
 
 // Animation timings
 export const MODAL_ANIMATION_DURATION = {
@@ -31,8 +30,6 @@ export const REMOVE_BUTTON_OFFSET = {
   x: 5,
   y: -5,
 };
-
-export const LINE_Y_OFFSET = 330;
 
 // Initial city grid layout
 export const INITIAL_SPACING = SPACING.sm;
@@ -62,3 +59,4 @@ export const Z_INDEX_ITEM_SCORED = 100;
 export const Z_INDEX_ITEM_DEFAULT = 50;
 export const ELEVATION_DRAGGING = 20;
 export const ELEVATION_DEFAULT = 10;
+export const LIFT_PROPORTION = 0.4;

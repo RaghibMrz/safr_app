@@ -48,7 +48,6 @@ export const welcomeMessages = [
   "Laipni lūdzam draugs", // Latvian
   "Բարի գալուստ ընկեր", // Armenian (Bari galust ynker)
   "მოგესალმებით მეგობარო", // Georgian (Mogesalmebit megobaro)
-  "ברוך הבא חבר", // Hebrew (Baruch haba chaver)
   "Mirë se vini mik", // Albanian
   "Добредојде пријателе", // Macedonian (Dobredojde prijatele)
   "Dobrodošao prijatelju", // Croatian/Serbian

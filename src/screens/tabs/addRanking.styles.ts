@@ -250,7 +250,7 @@ export const styles = StyleSheet.create({
     color: COLORS.white,
     position: "absolute",
     bottom: 5,
-    fontSize: FONT_SIZES.xxs,
+    fontSize: FONT_SIZES.xs3,
     fontWeight: FONT_WEIGHTS.bold,
   },
   scoreContainer: {

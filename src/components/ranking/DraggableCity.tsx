@@ -64,7 +64,7 @@ export const DraggableCity: React.FC<DraggableCityProps> = ({
             borderColor: isRanked
               ? getScoreColor(city.score as number)
               : "transparent",
-            // Add shadow for better visibility on iOS
+
             ...(Platform.OS === "ios" && isDragging
               ? {
                   shadowColor: COLORS.shadow,
