@@ -451,7 +451,7 @@ export const searchModalStyles = StyleSheet.create({
     borderTopRightRadius: SPACING.xl,
     paddingTop: SPACING.sm,
     paddingBottom: SPACING.lg,
-    height: "70%",
+    height: "80%",
     shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.2,
