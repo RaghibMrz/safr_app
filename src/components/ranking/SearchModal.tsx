@@ -119,6 +119,7 @@ export const SearchModal = forwardRef<TextInput, SearchModalProps>(
         animationType="none"
         transparent={true}
         onRequestClose={onClose}
+        statusBarTranslucent={true}
       >
         <Animated.View
           style={[searchModalStyles.modalBackdrop, { opacity: modalOpacity }]}
