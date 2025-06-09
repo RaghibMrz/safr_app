@@ -618,7 +618,10 @@ export default function AddRankingScreen() {
             </Animated.View>
 
             {/* Selected Cities */}
-            <View style={styles.selectedCitiesContainer}>
+            <View
+              ref={selectedCitiesContainerRef}
+              style={styles.selectedCitiesContainer}
+            >
               {selectedCities.length === 0 ? (
                 <View style={styles.emptyStateContainer}>
                   <Ionicons
