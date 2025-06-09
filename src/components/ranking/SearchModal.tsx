@@ -2,6 +2,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { forwardRef } from "react";
 import {
+  ActivityIndicator,
   Animated,
   FlatList,
   Modal,
@@ -12,7 +13,7 @@ import {
   StyleSheet,
 } from "react-native";
 
-import { COLORS, FONT_SIZES } from "../../theme";
+import { COLORS, FONT_SIZES, SPACING } from "../../theme";
 import { City } from "@/src/types/city";
 import { searchModalStyles } from "@/src/screens/tabs/addRanking.styles";
 import { SearchResultItem } from "./SearchResultItem";
@@ -21,10 +22,13 @@ interface SearchModalProps {
   visible: boolean;
   searchTerm: string;
   onSearchTermChange: (text: string) => void;
+  countryFilter?: string;
+  onCountryFilterChange?: (text: string) => void;
   onClose: () => void;
   onSelectCity: (city: City) => void;
   displayedCities: City[];
   isLoading: boolean;
+  searchError?: string;
   modalOpacity: Animated.Value;
   modalTranslateY: Animated.Value;
 }
@@ -35,19 +39,79 @@ export const SearchModal = forwardRef<TextInput, SearchModalProps>(
       visible,
       searchTerm,
       onSearchTermChange,
+      countryFilter = "",
+      onCountryFilterChange,
       onClose,
       onSelectCity,
       displayedCities,
       isLoading,
+      searchError,
       modalOpacity,
       modalTranslateY,
     },
     ref
   ) => {
-    // The renderSearchResult function is now simpler, just rendering the new component
     const renderSearchResult = ({ item }: { item: City }) => (
       <SearchResultItem item={item} onSelectCity={onSelectCity} />
     );
+
+    const renderEmpty = () => {
+      if (isLoading) {
+        return (
+          <View style={searchModalStyles.noResultsContainer}>
+            <ActivityIndicator size="large" color={COLORS.primary} />
+            <Text style={searchModalStyles.noResultsText}>Searching...</Text>
+          </View>
+        );
+      }
+
+      if (searchError) {
+        return (
+          <View style={searchModalStyles.noResultsContainer}>
+            <Ionicons
+              name="alert-circle-outline"
+              size={FONT_SIZES.logo}
+              color={COLORS.error}
+            />
+            <Text
+              style={[searchModalStyles.noResultsText, { color: COLORS.error }]}
+            >
+              {searchError}
+            </Text>
+          </View>
+        );
+      }
+
+      if (searchTerm.trim() || countryFilter) {
+        return (
+          <View style={searchModalStyles.noResultsContainer}>
+            <Ionicons
+              name="search"
+              size={FONT_SIZES.logo}
+              color={COLORS.textMuted}
+            />
+            <Text style={searchModalStyles.noResultsText}>No cities found</Text>
+            <Text style={searchModalStyles.noResultsSubtext}>
+              Try searching for a different city or country
+            </Text>
+          </View>
+        );
+      }
+
+      return (
+        <View style={searchModalStyles.noResultsContainer}>
+          <Ionicons
+            name="search"
+            size={FONT_SIZES.logo}
+            color={COLORS.textMuted}
+          />
+          <Text style={searchModalStyles.noResultsText}>Search for a city</Text>
+          <Text style={searchModalStyles.noResultsSubtext}>
+            Type a city name or filter by country
+          </Text>
+        </View>
+      );
+    };
 
     return (
       <Modal
@@ -98,7 +162,7 @@ export const SearchModal = forwardRef<TextInput, SearchModalProps>(
             <TextInput
               ref={ref}
               style={searchModalStyles.modalSearchInput}
-              placeholder="Type city name or country..."
+              placeholder="Type city name..."
               placeholderTextColor={COLORS.placeholder}
               value={searchTerm}
               onChangeText={onSearchTermChange}
@@ -119,6 +183,42 @@ export const SearchModal = forwardRef<TextInput, SearchModalProps>(
             )}
           </View>
 
+          {onCountryFilterChange && (
+            <View
+              style={[
+                searchModalStyles.searchInputContainer,
+                { marginTop: SPACING.sm },
+              ]}
+            >
+              <Ionicons
+                name="earth"
+                size={FONT_SIZES.xl}
+                color={COLORS.textMuted}
+              />
+              <TextInput
+                style={searchModalStyles.modalSearchInput}
+                placeholder="Filter by country (optional)..."
+                placeholderTextColor={COLORS.placeholder}
+                value={countryFilter}
+                onChangeText={onCountryFilterChange}
+                autoCapitalize="words"
+                returnKeyType="search"
+              />
+              {countryFilter.length > 0 && (
+                <TouchableOpacity
+                  onPress={() => onCountryFilterChange("")}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Ionicons
+                    name="close-circle"
+                    size={FONT_SIZES.xl}
+                    color={COLORS.textMuted}
+                  />
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
           <FlatList
             data={displayedCities}
             renderItem={renderSearchResult}
@@ -127,23 +227,7 @@ export const SearchModal = forwardRef<TextInput, SearchModalProps>(
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={searchModalStyles.listContent}
-            ListEmptyComponent={
-              searchTerm.trim() && !isLoading ? (
-                <View style={searchModalStyles.noResultsContainer}>
-                  <Ionicons
-                    name="search"
-                    size={FONT_SIZES.logo}
-                    color={COLORS.textMuted}
-                  />
-                  <Text style={searchModalStyles.noResultsText}>
-                    No cities found matching "{searchTerm}"
-                  </Text>
-                  <Text style={searchModalStyles.noResultsSubtext}>
-                    Try searching for a different city or country
-                  </Text>
-                </View>
-              ) : null
-            }
+            ListEmptyComponent={renderEmpty}
           />
         </Animated.View>
       </Modal>
