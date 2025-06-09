@@ -16,10 +16,11 @@ export interface TokenResponse {
 export interface CityDisplay {
   id: number;
   name: string;
-  country: string;
-  latitude?: number | null;
-  longitude?: number | null;
-  geoname_id?: string | null;
+  country_code: string;
+  country_name: string;
+  latitude?: number;
+  longitude?: number;
+  geoname_id?: string;
 }
 
 export interface UserCityRanking {

@@ -74,13 +74,12 @@ export default function AddRankingScreen() {
   const buttonScale = useRef(new Animated.Value(0.95)).current;
 
   // State
-  const [allCities, setAllCities] = useState<City[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>("");
+  const [countryFilter, setCountryFilter] = useState<string>("");
+  const [searchResults, setSearchResults] = useState<City[]>([]);
   const [selectedCities, setSelectedCities] = useState<DraggableCityData[]>([]);
-  const [isLoadingCities, setIsLoadingCities] = useState(true);
+  const [isLoadingSearch, setIsLoadingSearch] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [fetchError, setFetchError] = useState("");
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [currentDraggingId, setCurrentDraggingId] = useState<number | null>(
     null
@@ -92,6 +91,7 @@ export default function AddRankingScreen() {
     height: 0,
   });
   const [isScrollEnabled, setIsScrollEnabled] = useState(true);
+  const [searchError, setSearchError] = useState<string>("");
 
   // Animate on focus
   useFocusEffect(
@@ -116,7 +116,8 @@ export default function AddRankingScreen() {
         // Reset when leaving
         setSelectedCities([]);
         setSearchTerm("");
-        setDebouncedSearchTerm("");
+        setCountryFilter("");
+        setSearchResults([]);
         Object.keys(cityPositions.current).forEach((key) => {
           delete cityPositions.current[parseInt(key)];
         });
@@ -125,33 +126,43 @@ export default function AddRankingScreen() {
     }, [])
   );
 
-  const fetchCities = useCallback(async () => {
-    setIsLoadingCities(true);
-    setFetchError("");
+  // Search for cities using the API
+  const searchCities = useCallback(async (query: string, country?: string) => {
+    if (!query.trim() && !country) {
+      setSearchResults([]);
+      return;
+    }
+
+    setIsLoadingSearch(true);
+    setSearchError("");
     try {
-      const cityData = await apiService.getCities(0, MAX_CITIES_FETCH);
-      setAllCities(cityData);
+      const results = await apiService.searchCities(
+        query.trim(),
+        country?.trim(),
+        MAX_SEARCH_RESULTS
+      );
+      setSearchResults(results);
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to load cities";
-      setFetchError(errorMessage);
-      setAllCities([]);
+      console.error("Search error:", error);
+      setSearchError("Failed to search cities. Please try again.");
+      setSearchResults([]);
     } finally {
-      setIsLoadingCities(false);
+      setIsLoadingSearch(false);
     }
   }, []);
 
-  useEffect(() => {
-    fetchCities();
-  }, [fetchCities]);
-
+  // Debounced search effect
   useEffect(() => {
     const handler = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm);
+      if (showSearchModal && (searchTerm || countryFilter)) {
+        searchCities(searchTerm, countryFilter);
+      } else {
+        setSearchResults([]);
+      }
     }, SEARCH_DEBOUNCE_DELAY);
 
     return () => clearTimeout(handler);
-  }, [searchTerm]);
+  }, [searchTerm, countryFilter, showSearchModal, searchCities]);
 
   useEffect(() => {
     if (showSearchModal) {
@@ -194,19 +205,6 @@ export default function AddRankingScreen() {
       return () => clearTimeout(timer);
     }
   }, [showSearchModal]);
-
-  const displayedCities = useMemo(() => {
-    const trimmedSearch = debouncedSearchTerm.trim().toLowerCase();
-    if (!trimmedSearch) return [];
-
-    return allCities
-      .filter(
-        (city) =>
-          city.name.toLowerCase().includes(trimmedSearch) ||
-          city.country.toLowerCase().includes(trimmedSearch)
-      )
-      .slice(0, MAX_SEARCH_RESULTS);
-  }, [allCities, debouncedSearchTerm]);
 
   const recalculateUnrankedPositions = useCallback(
     (currentCities: DraggableCityData[]) => {
@@ -263,7 +261,7 @@ export default function AddRankingScreen() {
           });
 
           setCurrentDraggingId(cityId);
-          setIsScrollEnabled(false);
+          setIsScrollEnabled(false); // Disable scroll when dragging starts
           const city = selectedCities.find((c) => c.id === cityId);
           if (city && cityPositions.current[cityId]) {
             cityPositions.current[cityId].setOffset({
@@ -282,7 +280,7 @@ export default function AddRankingScreen() {
         },
 
         onPanResponderRelease: (_, gestureState) => {
-          setIsScrollEnabled(true);
+          setIsScrollEnabled(true); // Re-enable scroll when dragging ends
           const position = cityPositions.current[cityId];
           if (!position) return;
 
@@ -369,7 +367,9 @@ export default function AddRankingScreen() {
   const resetSearchModalState = useCallback(() => {
     setShowSearchModal(false);
     setSearchTerm("");
-    setDebouncedSearchTerm("");
+    setCountryFilter("");
+    setSearchResults([]);
+    setSearchError("");
   }, []);
 
   const handleSelectCity = useCallback(
@@ -490,9 +490,13 @@ export default function AddRankingScreen() {
   }, [resetSearchModalState]);
 
   const handleRankingLineLayout = useCallback(() => {
-    rankingLineRef.current?.measureInWindow((x, y, width, height) => {
-      setRankingLineLayout({ x, y, width, height });
-    });
+    // Use a small delay to ensure the layout is fully rendered
+    setTimeout(() => {
+      rankingLineRef.current?.measureInWindow((x, y, width, height) => {
+        console.log("Ranking line measured:", { x, y, width, height });
+        setRankingLineLayout({ x, y, width, height });
+      });
+    }, 100);
   }, []);
 
   if (!authContext) {
@@ -500,19 +504,6 @@ export default function AddRankingScreen() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.centeredLoaderContainer}>
           <Text style={{ color: COLORS.error }}>Service unavailable.</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  if (isLoadingCities && allCities.length === 0) {
-    return (
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.centeredLoaderContainer}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
-          <Text style={{ marginTop: SPACING.md, color: COLORS.textSecondary }}>
-            Loading cities...
-          </Text>
         </View>
       </SafeAreaView>
     );
@@ -713,10 +704,13 @@ export default function AddRankingScreen() {
           visible={showSearchModal}
           searchTerm={searchTerm}
           onSearchTermChange={setSearchTerm}
+          countryFilter={countryFilter}
+          onCountryFilterChange={setCountryFilter}
           onClose={handleModalClose}
           onSelectCity={handleSelectCity}
-          displayedCities={displayedCities}
-          isLoading={isLoadingCities}
+          displayedCities={searchResults}
+          isLoading={isLoadingSearch}
+          searchError={searchError}
           modalOpacity={modalOpacity}
           modalTranslateY={modalTranslateY}
         />
