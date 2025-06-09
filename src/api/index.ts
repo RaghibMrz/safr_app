@@ -8,8 +8,6 @@ import {
 } from "../types/dtos";
 
 // --- Configuration ---
-// const API_BASE_URL = "http://192.168.1.42:8000";
-// const API_BASE_URL = "https://safr-backend-t4t5dvi7da-nw.a.run.app";
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 // Store the logout callback
@@ -219,6 +217,40 @@ const apiService = {
   },
 
   // --- Cities Endpoints ---
+  searchCities: async (
+    query: string,
+    country?: string,
+    limit: number = 10
+  ): Promise<CityDisplay[]> => {
+    const params = new URLSearchParams({
+      query: query,
+      limit: limit.toString(),
+    });
+
+    if (country) {
+      params.append("country", country);
+    }
+
+    const response = await fetch(
+      `${API_BASE_URL}/cities/search/?${params.toString()}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response
+        .json()
+        .catch(() => ({ detail: "Failed to search cities" }));
+      throw new Error(errorData.detail || "Failed to search cities");
+    }
+    return (await response.json()) as CityDisplay[];
+  },
+
   getCities: async (
     skip: number = 0,
     limit: number = 15000

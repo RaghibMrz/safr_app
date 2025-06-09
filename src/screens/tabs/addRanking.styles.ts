@@ -579,4 +579,14 @@ export const searchModalStyles = StyleSheet.create({
     textAlign: "center",
     marginTop: SPACING.xs,
   },
+  clearButton: {
+    padding: SPACING.xs,
+    marginRight: SPACING.xs,
+  },
+  errorText: {
+    color: COLORS.error,
+    fontSize: FONT_SIZES.md,
+    marginTop: SPACING.sm,
+    textAlign: "center",
+  },
 });

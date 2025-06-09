@@ -3,7 +3,15 @@ import { Animated, PanResponder } from "react-native";
 export interface City {
   id: number;
   name: string;
-  country: string;
+  country_code: string;
+  latitude?: number;
+  longitude?: number;
+  geoname_id?: string;
+  country_name?: string;
+}
+
+export interface CitySearchResult extends City {
+  relevance?: number;
 }
 
 export interface DraggableCityProps {
