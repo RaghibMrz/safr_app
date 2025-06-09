@@ -40,5 +40,6 @@ yarn-error.*
 app-example
 
 # Build files
+builds/
 *.ipa
 *.apk
