@@ -41,7 +41,7 @@ export const SearchResultItem: React.FC<SearchResultItemProps> = ({
             size={FONT_SIZES.xs}
             color={COLORS.textMuted}
           />
-          <Text style={searchModalStyles.countryName}>{item.country}</Text>
+          <Text style={searchModalStyles.countryName}>{item.country_code}</Text>
         </View>
       </View>
       <View style={searchModalStyles.addButton}>

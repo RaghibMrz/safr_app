@@ -195,7 +195,7 @@ export const SwipeableRankingItem: React.FC<
                 size={FONT_SIZES.sm}
                 color={COLORS.textMuted}
               />
-              <Text style={styles.countryText}>{item.city.country}</Text>
+              <Text style={styles.countryText}>{item.city.country_name}</Text>
             </View>
           </View>
 
